@@ -1,0 +1,4 @@
+# Debug-only dependencies for FastMCP service
+
+debugpy==1.8.1
+watchfiles>=0.21.0

@@ -1,0 +1,258 @@
+# ============================================================================
+# Web Reader - Git Ignore Configuration
+# ============================================================================
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+
+# ============================================================================
+# PYTHON
+# ============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# ============================================================================
+# NODE.JS / JAVASCRIPT / TYPESCRIPT
+# ============================================================================
+# Dependencies
+node_modules/
+jspm_packages/
+bower_components/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.nuxt/
+.cache/
+.parcel-cache/
+.turbo/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Package manager files
+.pnpm-store/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output
+
+# ============================================================================
+# DOCKER
+# ============================================================================
+# Don't ignore docker-compose.yml itself, but ignore override files
+docker-compose.override.yml
+docker-compose.*.override.yml
+
+# ============================================================================
+# IDE / EDITOR
+# ============================================================================
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================================================
+# OPERATING SYSTEM
+# ============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================================================
+# APPLICATION-SPECIFIC
+# ============================================================================
+# Logs
+logs/
+*.log
+log/
+
+# Data and artifacts
+data/
+artifacts/
+screenshots/
+*.har
+
+# Browser automation
+playwright/.cache/
+.playwright/
+
+# LLM models (if stored locally)
+models/
+*.bin
+*.gguf
+*.safetensors
+
+# Ollama data (handled by Docker volume)
+ollama-data/
+
+# Vector database (future)
+chroma-data/
+qdrant-data/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Cache files
+.cache/
+cache/
+
+# ============================================================================
+# DEPENDENCIES & LOCK FILES (keep lock files for reproducibility)
+# ============================================================================
+# Keep these to ensure consistent dependencies:
+# - package-lock.json
+# - yarn.lock
+# - pnpm-lock.yaml
+# - poetry.lock
+# - Pipfile.lock
+
+# ============================================================================
+# GENERATED DOCUMENTATION
+# ============================================================================
+# Keep .github/ documentation, but ignore auto-generated API docs
+docs/_build/
+site/
+
+# ============================================================================
+# DEVCONTAINER
+# ============================================================================
+# Keep .devcontainer/ configuration
+# But ignore any local overrides
+.devcontainer/devcontainer.local.json
+
+# ----------------------------------------------------------------------------
+# Frontend TypeScript source library should be committed
+# Generic "lib/" ignore above matches any lib directory; unignore the frontend src lib
+!frontend/src/lib/
+!frontend/src/lib/**

@@ -1,0 +1,92 @@
+# Development overlay for docker-compose.yml
+# This file adds hot reload, source mounts, debug ports, and test directories
+# Usage: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
+
+services:
+  # Frontend - Development with Vite HMR
+  frontend:
+    build:
+      target: dev
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - NODE_OPTIONS=--inspect=0.0.0.0:9229
+    ports:
+      - "9229:9229"  # Node.js debugger
+    volumes:
+      # Source code hot reload
+      - ../frontend/src:/app/src:rw
+      - ../frontend/tests:/app/tests:rw
+      # Configuration files
+      - ../frontend/vite.config.ts:/app/vite.config.ts:rw
+      - ../frontend/vitest.config.ts:/app/vitest.config.ts:rw
+      - ../frontend/tsconfig.json:/app/tsconfig.json:rw
+      - ../frontend/tailwind.config.js:/app/tailwind.config.js:rw
+      - ../frontend/eslint.config.js:/app/eslint.config.js:rw
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+  # Backend API - Development with uvicorn reload
+  backend:
+    build:
+      target: dev
+    environment:
+      - LOG_LEVEL=debug
+      - DEBUGPY_PORT=5671
+    ports:
+      - "5671:5671"  # Python debugger
+    volumes:
+      # Source code hot reload
+      - ../backend/src:/app/src:rw
+      - ../backend/tests:/app/tests:rw
+      - ../backend/server.py:/app/server.py:rw
+      - ../backend/pytest.ini:/app/pytest.ini:rw
+    command: >
+      sh -c "if [ -n \"$$DEBUGPY_PORT\" ]; then
+        python -m debugpy --listen 0.0.0.0:$$DEBUGPY_PORT -m uvicorn server:app --host 0.0.0.0 --port 8000 --reload;
+      else
+        uvicorn server:app --host 0.0.0.0 --port 8000 --reload;
+      fi"
+
+  # LangChain Orchestrator - Development with watchfiles
+  langchain:
+    build:
+      target: dev
+    environment:
+      - LOG_LEVEL=debug
+      - DEBUGPY_PORT=5672
+    ports:
+      - "5672:5672"  # Python debugger
+    volumes:
+      # Source code hot reload
+      - ../langchain/src:/app/src:rw
+      - ../langchain/tests:/app/tests:rw
+      - ../langchain/server.py:/app/server.py:rw
+      - ../langchain/pytest.ini:/app/pytest.ini:rw
+    command: >
+      sh -c "if [ -n \"$$DEBUGPY_PORT\" ]; then
+        python -m debugpy --listen 0.0.0.0:$$DEBUGPY_PORT server.py;
+      else
+        watchfiles --ignore-paths '*.pyc,__pycache__' 'python server.py' src/;
+      fi"
+
+  # FastMCP Server - Development with watchfiles
+  fastmcp:
+    build:
+      target: dev
+    environment:
+      - LOG_LEVEL=debug
+      - DEBUGPY_PORT=5673
+    ports:
+      - "5673:5673"  # Python debugger
+    volumes:
+      # Source code hot reload
+      - ../fastmcp/src:/app/src:rw
+      - ../fastmcp/tests:/app/tests:rw
+      - ../fastmcp/server.py:/app/server.py:rw
+      - ../fastmcp/pytest.ini:/app/pytest.ini:rw
+    command: >
+      sh -c "if [ -n \"$$DEBUGPY_PORT\" ]; then
+        python -m debugpy --listen 0.0.0.0:$$DEBUGPY_PORT server.py;
+      else
+        watchfiles --ignore-paths '*.pyc,__pycache__' 'python server.py' src/;
+      fi"

@@ -1,0 +1,34 @@
+# Disallowed Domains Configuration
+# ============================================================================
+# Domains in this list will be BLOCKED from access
+# Format: One domain per line
+# Wildcards supported: *.example.com matches all subdomains
+#
+# Common blocklist categories:
+#   - Malware/phishing sites
+#   - Adult content
+#   - Known scraping-hostile sites
+#   - Rate-limited APIs without proper handling
+#
+# Examples of blocked patterns:
+# ============================================================================
+
+# Malware and phishing (examples - add real blocklists as needed)
+# *.malware-site.com
+# phishing-example.com
+
+# Sites with aggressive anti-bot measures
+# *.cloudflare-challenge.com
+
+# Rate-limited APIs (that need special handling)
+# api.twitter.com
+# graph.facebook.com
+
+# Adult content (if filtering required)
+# *.adult-site.com
+
+# Known scraping-hostile sites
+# *.anti-scraping-site.com
+
+# Add your custom blocked domains below:
+# ============================================================================

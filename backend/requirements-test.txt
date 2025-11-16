@@ -1,0 +1,16 @@
+# Backend API Test Dependencies
+# ============================================================================
+
+# Testing frameworks
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+pytest-cov>=6.0.0
+
+# HTTP testing
+httpx>=0.28.0
+
+# Mocking
+pytest-mock>=3.14.0
+
+# Code quality
+ruff>=0.8.0

@@ -1,0 +1,18 @@
+# Allowed Domains Configuration
+# ============================================================================
+# If this file is EMPTY or contains only comments, ALL domains are allowed
+# (except those in disallowed-domains.txt)
+#
+# If this file contains domains, ONLY these domains will be accessible
+# Format: One domain per line
+# Wildcards supported: *.example.com matches subdomains
+#
+# Examples:
+# wikipedia.org
+# *.wikipedia.org
+# duckduckgo.com
+# github.com
+# stackoverflow.com
+#
+# Leave empty for open access (recommended for general research)
+# ============================================================================

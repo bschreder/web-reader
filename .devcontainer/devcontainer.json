@@ -1,0 +1,41 @@
+{
+  "name": "web-reader-dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "PYTHONUNBUFFERED": "1",
+    "NODE_ENV": "development"
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder}/.env,target=/workspaces/web-reader/.env,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/logs,target=/workspaces/web-reader/logs,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/data,target=/workspaces/web-reader/data,type=bind,consistency=cached"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "vitest.explorer",
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "pflannery.vscode-versionlens",
+        "github.copilot",
+        "github.copilot-chat"
+      ]
+    }
+  },
+  "postCreateCommand": "/workspaces/web-reader/.devcontainer/postCreateCommand.sh",
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb"
+  }
+}

@@ -1,0 +1,163 @@
+# Web Reader Application Services
+# This compose file defines all application-level services.
+# External services (Playwright, Ollama) are in container/docker-compose.yml
+
+services:
+  # Frontend - TanStack Start UI
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: prod
+    container_name: web-reader-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+      - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:8000}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_TARGET=${LOG_TARGET:-console}
+      - LOG_FILE=${LOG_FILE:-logs/frontend.log}
+    env_file:
+      - ../.env
+    depends_on:
+      - backend
+    networks:
+      - web-reader-net
+    volumes:
+      - ../logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backend API - FastAPI REST + WebSocket
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: prod
+    container_name: web-reader-backend
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - API_HOST=${API_HOST:-0.0.0.0}
+      - API_PORT=${API_PORT:-8000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - LANGCHAIN_HOST=${LANGCHAIN_HOST:-langchain}
+      - LANGCHAIN_PORT=${LANGCHAIN_PORT:-8001}
+      - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-5}
+      - DEFAULT_TIMEOUT=${DEFAULT_TIMEOUT:-120}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_TARGET=${LOG_TARGET:-console}
+      - LOG_FILE=${LOG_FILE:-logs/backend.log}
+    env_file:
+      - ../.env
+    depends_on:
+      - langchain
+    networks:
+      - web-reader-net
+    volumes:
+      - ../config:/app/config:ro
+      - ../data:/app/data
+      - ../logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # LangChain Orchestrator - Agentic workflow
+  langchain:
+    build:
+      context: ../langchain
+      dockerfile: Dockerfile
+      target: prod
+    container_name: web-reader-langchain
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3:8b}
+      - FASTMCP_HOST=${FASTMCP_HOST:-fastmcp}
+      - FASTMCP_PORT=${FASTMCP_PORT:-3000}
+      - MAX_ITERATIONS=${MAX_ITERATIONS:-15}
+      - MAX_LINK_DEPTH=${MAX_LINK_DEPTH:-3}
+      - MAX_PAGES=${MAX_PAGES:-20}
+      - TIME_BUDGET=${TIME_BUDGET:-120}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_TARGET=${LOG_TARGET:-console}
+      - LOG_FILE=${LOG_FILE:-logs/langchain.log}
+    env_file:
+      - ../.env
+    depends_on:
+      - fastmcp
+    networks:
+      - web-reader-net
+      - external-net  # Connect to external services
+    volumes:
+      - ../config:/app/config:ro
+      - ../logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # FastMCP Server - Browser automation tools
+  fastmcp:
+    build:
+      context: ../fastmcp
+      dockerfile: Dockerfile
+      target: prod
+    container_name: web-reader-fastmcp
+    environment:
+      - PLAYWRIGHT_HOST=${PLAYWRIGHT_HOST:-playwright}
+      - PLAYWRIGHT_PORT=${PLAYWRIGHT_PORT:-3002}
+      - MCP_SERVER_PORT=${MCP_SERVER_PORT:-3100}
+      - BROWSER_TYPE=${BROWSER_TYPE:-chromium}
+      - ENABLE_RATE_LIMITING=${ENABLE_RATE_LIMITING:-true}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-5}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-90}
+      - REQUEST_DELAY_MIN=${REQUEST_DELAY_MIN:-10}
+      - REQUEST_DELAY_MAX=${REQUEST_DELAY_MAX:-20}
+      - RESPECT_ROBOTS_TXT=${RESPECT_ROBOTS_TXT:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_TARGET=${LOG_TARGET:-console}
+      - LOG_FILE=${LOG_FILE:-logs/fastmcp.log}
+    env_file:
+      - ../.env
+    networks:
+      - web-reader-net
+      - external-net  # Connect to Playwright
+    volumes:
+      - ../config:/app/config:rw
+      - ../logs:/app/logs
+    restart: unless-stopped
+    ports:
+      - "3100:3100"  # MCP server main port
+      - "3101:3101"  # Health server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  # Internal application network
+  web-reader-net:
+    driver: bridge
+    name: web-reader-network
+
+  # External network for connecting to external services (Playwright, Ollama)
+  external-net:
+    external: true
+    name: external-services-network
