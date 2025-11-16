@@ -36,7 +36,7 @@ Web Reader is a production-ready system that combines large language models (LLM
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/web-reader.git
+git clone https://github.com/bschreder/web-reader.git
 cd web-reader
 ```
 
