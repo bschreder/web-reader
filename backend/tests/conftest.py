@@ -13,7 +13,6 @@ from httpx import AsyncClient
 # Ensure the backend package root is on sys.path so `import src` works
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.config import ARTIFACT_DIR
 
 
 @pytest.fixture(scope="session")

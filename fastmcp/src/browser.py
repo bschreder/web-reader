@@ -5,7 +5,6 @@ Handles Playwright browser connections, contexts, and page management.
 
 import inspect
 import random
-from urllib.parse import urlparse
 
 from loguru import logger
 from playwright.async_api import (
@@ -13,6 +12,7 @@ from playwright.async_api import (
     BrowserContext,
     Page,
     Playwright,
+    ViewportSize,
     async_playwright,
 )
 
@@ -108,6 +108,7 @@ async def get_browser() -> Browser:
 
         logger.info("Browser initialized successfully")
 
+    assert _browser is not None, "Browser should be initialized at this point"
     return _browser
 
 
@@ -119,7 +120,7 @@ async def get_browser() -> Browser:
 async def create_context(
     task_id: str = "default",
     user_agent: str | None = None,
-    viewport: dict[str, int] | None = None,
+    viewport: ViewportSize | None = None,
 ) -> BrowserContext:
     """
     Create a new deidentified browser context for a specific task.

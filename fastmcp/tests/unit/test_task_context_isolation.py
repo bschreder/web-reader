@@ -5,15 +5,16 @@ Tests ensure that each task gets its own isolated browser context,
 maintaining privacy and preventing data leakage between tasks.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from src.browser import (
-    create_context,
-    get_current_page,
-    cleanup_task_context,
     _contexts,
     _pages,
+    cleanup_task_context,
+    create_context,
+    get_current_page,
 )
 
 

@@ -71,7 +71,7 @@ class TestGetBrowser:
     async def test_remote_connection_failure_raises(self, mocker: MockerFixture):
         """Remote connection failure should propagate (no fallback)."""
         mock_playwright = MagicMock()
-        mock_playwright.chromium.connect = AsyncMock(side_effect=Exception("Connection failed"))
+        mock_playwright.chromium.connect = AsyncMock(side_effect=RuntimeError("Connection failed"))
 
         mocker.patch("src.browser._playwright", None)
         mocker.patch("src.browser._browser", None)
@@ -81,7 +81,7 @@ class TestGetBrowser:
         mock_ap_instance.start = AsyncMock(return_value=mock_playwright)
         mock_ap.return_value = mock_ap_instance
 
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await get_browser()
 
         mock_playwright.chromium.connect.assert_called_once()

@@ -4,7 +4,9 @@ Integration tests connect to real Playwright container but may mock other servic
 """
 
 import asyncio
+import contextlib
 import os
+import socket
 import sys
 from pathlib import Path
 
@@ -34,8 +36,6 @@ def playwright_url() -> str:
 @pytest.fixture
 def skip_if_no_playwright(playwright_url: str):
     """Skip test if Playwright container not available."""
-    import socket
-
     # Parse host and port from URL
     host = playwright_url.split("://")[1].split(":")[0]
     port = int(playwright_url.split(":")[-1])
@@ -48,10 +48,8 @@ def skip_if_no_playwright(playwright_url: str):
         # DNS resolution failed; treat as not available and skip
         pytest.skip(f"Playwright not resolvable at {playwright_url}")
     finally:
-        try:
+        with contextlib.suppress(Exception):
             sock.close()
-        except Exception:
-            pass
 
     if result != 0:
         pytest.skip(f"Playwright not available at {playwright_url}")

@@ -36,6 +36,7 @@
     "pip3": true, 
     "python": true,
     "python3": true,
+    "ruff": true,
     "docker": true,
     "fetch": true,
     "curl": true,

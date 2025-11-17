@@ -7,12 +7,13 @@ import base64
 import time
 from typing import Any
 from urllib.parse import urlparse
+
 from loguru import logger
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from pydantic import BaseModel, Field
 
 from .browser import get_current_page, normalize_url
-from .config import HTTP_ERROR_THRESHOLD, HTTP_STATUS_MESSAGES, MAX_TEXT_CHARS, MAX_LINKS
+from .config import HTTP_ERROR_THRESHOLD, HTTP_STATUS_MESSAGES, MAX_LINKS, MAX_TEXT_CHARS
 from .filtering import is_domain_allowed
 from .rate_limiting import enforce_rate_limit
 

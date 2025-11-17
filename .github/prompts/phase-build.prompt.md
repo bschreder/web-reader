@@ -2,7 +2,7 @@
 agent: agent
 ---
 
-Review Phase 1 `.github/project-plan.md`.
+Review Phase 2 `.github/project-plan.md`.
 Review existing implementation.
 
 - Implement best practices without consideration for existing code.

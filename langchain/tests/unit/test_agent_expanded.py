@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -15,7 +15,8 @@ from src.agent import create_research_agent, execute_research_task
 @pytest.fixture(autouse=True)
 def stub_langchain_modules(monkeypatch):
     """Stub LangChain imports used inside create_research_agent to avoid heavy deps."""
-    import types, sys
+    import types
+    import sys
 
     # Stub ChatOllama
     chat_models = types.ModuleType("chat_models")

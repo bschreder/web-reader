@@ -1,5 +1,8 @@
 """End-to-end tests for complete FastMCP workflows."""
 
+import time
+from http import HTTPStatus
+
 import pytest
 
 from src.tools import get_page_content, navigate_to, take_screenshot
@@ -19,7 +22,7 @@ class TestFullWorkflow:
         # Step 1: Navigate
         nav_result = await navigate_to(test_urls["example"])
         assert nav_result["status"] == "success"
-        assert nav_result["http_status"] == 200
+        assert nav_result["http_status"] == HTTPStatus.OK
 
         # Step 2: Extract content
         content_result = await get_page_content()
@@ -42,28 +45,24 @@ class TestFullWorkflow:
         result = await navigate_to(test_urls["http_status_404"])
 
         assert result["status"] == "error"
-        assert result["http_status"] == 404
+        assert result["http_status"] == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio
     @pytest.mark.e2e
     @pytest.mark.slow
     async def test_rate_limiting_enforcement(self, skip_if_no_playwright, test_urls, mocker):
         """Test that rate limiting is enforced across requests."""
-        import time
-
         # Mock domain filtering to avoid accidental blocks
         mocker.patch("src.tools.is_domain_allowed", return_value=True)
 
-        domain = "httpbin.org"
-
         # Make 5 requests (should be allowed)
         start = time.time()
-        for i in range(5):
-            result = await navigate_to(f"https://httpbin.org/delay/0")
+        for _ in range(5):
+            result = await navigate_to("https://httpbin.org/delay/0")
             assert result["status"] == "success"
 
-        # Track time for first 5 requests
-        five_requests_time = time.time() - start
+        # Track time for first 5 requests (not used further, only for clarity)
+        _first_five_duration = time.time() - start
 
         # 6th request should trigger rate limit wait
         start = time.time()

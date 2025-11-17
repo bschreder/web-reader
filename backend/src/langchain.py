@@ -3,14 +3,12 @@ LangChain orchestrator client.
 Communicates with the LangChain service for task execution.
 """
 
-import asyncio
 from typing import Any, Optional
 
 import httpx
 from loguru import logger
 
 from .config import LANGCHAIN_URL
-from .models import WebSocketEvent
 from .tasks import Task
 
 # ============================================================================

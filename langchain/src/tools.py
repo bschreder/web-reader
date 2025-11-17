@@ -3,7 +3,6 @@ LangChain tool wrappers for FastMCP tools.
 Wraps MCP browser automation tools as LangChain StructuredTools.
 """
 
-from typing import Any
 
 from langchain_core.tools import StructuredTool
 from loguru import logger

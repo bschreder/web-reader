@@ -6,6 +6,7 @@ Handles allow/deny lists for URL navigation.
 import fnmatch
 from pathlib import Path
 from urllib.parse import urlparse
+
 from loguru import logger
 
 # ============================================================================

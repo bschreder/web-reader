@@ -1,5 +1,6 @@
 """Integration tests for FastMCP with live Playwright container."""
 
+from http import HTTPStatus
 import pytest
 
 from src.browser import create_context, get_browser
@@ -35,7 +36,7 @@ class TestPlaywrightIntegration:
         result = await navigate_to("https://example.com")
 
         assert result["status"] == "success"
-        assert result["http_status"] == 200
+        assert result["http_status"] == HTTPStatus.OK
         assert "example" in result["title"].lower() or "example" in result["url"]
 
     @pytest.mark.asyncio

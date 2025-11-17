@@ -13,7 +13,6 @@ from src.models import (
     EventType,
     HealthResponse,
     ScreenshotEvent,
-    TaskCancel,
     TaskCreate,
     TaskListResponse,
     TaskResponse,
@@ -21,7 +20,6 @@ from src.models import (
     ThinkingEvent,
     ToolCallEvent,
     ToolResultEvent,
-    WebSocketEvent,
 )
 
 

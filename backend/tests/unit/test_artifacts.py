@@ -4,7 +4,6 @@ Tests for artifact persistence.
 
 import json
 import pytest
-from pathlib import Path
 
 from src.artifacts import (
     delete_task_artifacts,

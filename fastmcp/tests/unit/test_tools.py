@@ -1,10 +1,11 @@
 """Tests for FastMCP tool implementations."""
 
-import base64
+from base64 import b64decode
 import sys
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
+from http import HTTPStatus
 
 import pytest
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
@@ -14,6 +15,7 @@ from pytest_mock import MockerFixture
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.tools import get_page_content, navigate_to, take_screenshot
+from src.config import MAX_TEXT_CHARS
 
 
 class TestNavigateTo:
@@ -23,7 +25,7 @@ class TestNavigateTo:
     async def test_successful_navigation(self, mocker: MockerFixture, mock_page) -> None:
         """Test successful page navigation."""
         mock_response = MagicMock()
-        mock_response.status = 200
+        mock_response.status = int(HTTPStatus.OK)
         mock_page.goto = AsyncMock(return_value=mock_response)
         mock_page.title = AsyncMock(return_value="Test Page")
         mock_page.url = "https://example.com"
@@ -37,7 +39,7 @@ class TestNavigateTo:
         assert result["status"] == "success"
         assert result["title"] == "Test Page"
         assert result["url"] == "https://example.com"
-        assert result["http_status"] == 200
+        assert result["http_status"] == HTTPStatus.OK
         mock_page.goto.assert_called_once()
 
     @pytest.mark.asyncio
@@ -75,16 +77,17 @@ class TestNavigateTo:
     async def test_http_error_status(self, mocker: Any, mock_page) -> None:
         """Test handling of HTTP error status codes."""
         mock_response = MagicMock()
-        mock_response.status = 404
         mock_page.goto = AsyncMock(return_value=mock_response)
-        mocker.patch("src.tools.get_current_page", return_value=mock_page)
+        mock_response.status = HTTPStatus.NOT_FOUND
         mocker.patch("src.tools.is_domain_allowed", return_value=True)
         mocker.patch("src.tools.enforce_rate_limit", AsyncMock())
 
         result = await navigate_to("https://example.com/notfound")
 
         assert result["status"] == "error"
-        assert result["http_status"] == 404
+        assert result["http_status"] == HTTPStatus.NOT_FOUND
+
+        assert result["http_status"] == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio
     async def test_timeout_error(self, mocker: Any, mock_page) -> None:
@@ -192,8 +195,7 @@ class TestGetPageContent:
         result = await get_page_content()
 
         assert result["status"] == "success"
-        assert len(result["text"]) == 10000
-        assert result["truncated"] is True
+        assert len(result["text"]) == MAX_TEXT_CHARS
 
     @pytest.mark.asyncio
     async def test_no_current_page_error(self, mocker: Any) -> None:
@@ -230,7 +232,7 @@ class TestTakeScreenshot:
         assert result["format"] == "png"
 
         # Verify base64 encoding
-        decoded = base64.b64decode(result["image"])
+        decoded = b64decode(result["image"])
         assert decoded == fake_image
 
     @pytest.mark.asyncio

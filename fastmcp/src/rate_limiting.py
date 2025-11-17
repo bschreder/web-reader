@@ -6,14 +6,15 @@ Enforces request limits per domain to avoid overwhelming servers.
 import asyncio
 import random
 import time
+
 from loguru import logger
 
 from .config import (
     ENABLE_RATE_LIMITING,
     RATE_LIMIT_REQUESTS,
     RATE_LIMIT_WINDOW,
-    REQUEST_DELAY_MIN,
     REQUEST_DELAY_MAX,
+    REQUEST_DELAY_MIN,
 )
 
 # ============================================================================
