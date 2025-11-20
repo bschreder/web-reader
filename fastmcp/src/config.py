@@ -14,7 +14,7 @@ from loguru import logger
 # ============================================================================
 
 # Playwright connection
-PLAYWRIGHT_HOST: Final[str] = os.getenv("PLAYWRIGHT_HOST", "host.docker.internal")
+PLAYWRIGHT_HOST: Final[str] = os.getenv("PLAYWRIGHT_HOST", "ws-playwright")
 PLAYWRIGHT_PORT: Final[int] = int(os.getenv("PLAYWRIGHT_PORT", "3002"))
 BROWSER_TYPE: Final[str] = os.getenv("BROWSER_TYPE", "chromium")
 

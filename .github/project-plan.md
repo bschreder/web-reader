@@ -561,6 +561,193 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 
 ---
 
+## Phase 5.5: CI/CD Pipeline with GitHub Actions (Week 7.5)
+
+### Goals
+
+- Implement automated build and test pipeline
+- Detect changed projects and build only what's needed
+- Create production-ready Docker images
+- Block PRs with failing tests or insufficient coverage
+
+### Tasks
+
+#### GitHub Actions Workflow Design
+
+- [ ] Create `.github/workflows/pr-validation.yml` workflow
+- [ ] Trigger on pull requests to `main` branch
+- [ ] Detect changed files and determine affected projects
+- [ ] Run jobs conditionally based on changed projects
+
+#### Change Detection Strategy
+
+- [ ] Use `tj-actions/changed-files` or similar action
+- [ ] Define file patterns for each project:
+  - `frontend/**` → Frontend project changed
+  - `backend/**` → Backend project changed
+  - `langchain/**` → LangChain project changed
+  - `fastmcp/**` → FastMCP project changed
+  - `docker/**` or `.env.example` → All projects may be affected
+- [ ] Output matrix of changed projects for parallel job execution
+
+#### Build Jobs (Per Project)
+
+Each project job should:
+- [ ] Check out repository code
+- [ ] Set up Docker Buildx for multi-stage builds
+- [ ] Build dev stage Docker image (includes test dependencies)
+- [ ] Cache Docker layers for faster builds
+
+**Frontend Build:**
+- [ ] Set up Node.js 24 environment
+- [ ] Install dependencies with caching
+- [ ] Run linting (`npm run lint`)
+- [ ] Run type checking (`tsc --noEmit`)
+- [ ] Build production assets (`npm run build`)
+- [ ] Build production Docker image (target: `prod`)
+
+**Backend Build:**
+- [ ] Set up Python 3.13 environment
+- [ ] Install dependencies with pip cache
+- [ ] Run linting (`ruff check` or `flake8`)
+- [ ] Run type checking (`mypy`)
+- [ ] Build production Docker image (target: `prod`)
+
+**LangChain Build:**
+- [ ] Set up Python 3.13 environment
+- [ ] Install dependencies with pip cache
+- [ ] Run linting and type checking
+- [ ] Build production Docker image (target: `prod`)
+
+**FastMCP Build:**
+- [ ] Set up Python 3.13 environment
+- [ ] Install dependencies with pip cache
+- [ ] Run linting and type checking
+- [ ] Build production Docker image (target: `prod`)
+
+#### Test Jobs (Per Project)
+
+**Frontend Tests:**
+- [ ] Run unit tests (`npm run test:unit`)
+- [ ] Run browser component tests (`npm run test:browser`)
+- [ ] Generate coverage report
+- [ ] Enforce >80% coverage threshold
+- [ ] Upload coverage artifact
+
+**Backend Tests:**
+- [ ] Start required infrastructure (Ollama, Playwright) via Docker Compose
+- [ ] Run unit tests (`pytest tests/unit --cov=src --cov-branch`)
+- [ ] Run integration tests (`pytest tests/integration`)
+- [ ] Run E2E tests (`pytest tests/e2e`)
+- [ ] Enforce >80% coverage threshold
+- [ ] Upload coverage artifact
+- [ ] Cleanup infrastructure containers
+
+**LangChain Tests:**
+- [ ] Start required infrastructure (Ollama, FastMCP) via Docker Compose
+- [ ] Run unit tests with coverage
+- [ ] Run integration tests
+- [ ] Run E2E tests
+- [ ] Enforce >80% coverage threshold
+- [ ] Upload coverage artifact
+- [ ] Cleanup infrastructure
+
+**FastMCP Tests:**
+- [ ] Start Playwright container via Docker Compose
+- [ ] Run unit tests with coverage
+- [ ] Run integration tests
+- [ ] Run E2E tests
+- [ ] Enforce >80% coverage threshold
+- [ ] Upload coverage artifact
+- [ ] Cleanup Playwright container
+
+#### Image Creation
+
+- [ ] Build production Docker images (target: `prod`) for changed projects
+- [ ] Tag images with PR number or commit SHA
+- [ ] Save images as artifacts (optional, for review)
+- [ ] Do NOT push images to registry (only build and validate)
+- [ ] Display image size and layers in job summary
+
+#### Quality Gates
+
+- [ ] All linting must pass (exit code 0)
+- [ ] All type checks must pass
+- [ ] All tests must pass (zero failures)
+- [ ] Coverage must meet >80% threshold per project
+- [ ] Docker builds must succeed for prod target
+- [ ] Block PR merge if any gate fails
+
+#### Workflow Optimization
+
+- [ ] Use matrix strategy for parallel project builds/tests
+- [ ] Cache Docker layers between builds
+- [ ] Cache npm/pip dependencies
+- [ ] Use `actions/cache@v3` for dependency caching
+- [ ] Set reasonable timeouts (30min max per job)
+- [ ] Fast-fail: cancel remaining jobs on first failure (optional)
+
+#### Workflow Status Reporting
+
+- [ ] Add job summary with build/test results
+- [ ] Display coverage percentages
+- [ ] List Docker image sizes
+- [ ] Show which projects were built/tested
+- [ ] Annotate PR with status check
+
+#### Documentation
+
+- [ ] Document GitHub Actions workflow in `README.md`
+- [ ] Create `.github/workflows/README.md` explaining workflow logic
+- [ ] Document required repository secrets (if any)
+- [ ] Add badge to main README showing build status
+
+### Example Workflow Structure
+
+```yaml
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  detect-changes:
+    # Detect which projects changed
+    
+  build-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    # Build and test frontend
+    
+  build-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    # Build and test backend
+    
+  build-langchain:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.langchain == 'true'
+    # Build and test langchain
+    
+  build-fastmcp:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.fastmcp == 'true'
+    # Build and test fastmcp
+```
+
+### Deliverables
+
+✅ GitHub Actions workflow implemented  
+✅ Automated build and test for all projects  
+✅ Change detection working correctly  
+✅ Production Docker images building successfully  
+✅ Coverage enforcement blocking bad PRs  
+✅ Workflow documentation complete  
+✅ CI/CD pipeline operational
+
+---
+
 ## Phase 6: Security Hardening and Production Prep (Week 8)
 
 ### Goals
@@ -729,26 +916,29 @@ Each phase must meet these criteria before moving to the next:
 - **Network Reliability**: Transient failures during browsing
 - **Concurrency Limits**: Scaling beyond 5 concurrent tasks
 - **Memory Leaks**: Long-running containers
+- **CI/CD Infrastructure Costs**: GitHub Actions minutes and storage
+  - _Mitigation_: Optimize workflows, use caching, conditional execution
 
 ---
 
 ## Timeline Summary
 
-| Phase                  | Duration  | Key Deliverable          |
-| ---------------------- | --------- | ------------------------ |
-| 0: Setup               | Week 1    | Docker infrastructure    |
-| 1: FastMCP             | Week 2    | Browser automation tools |
-| 2: Backend             | Week 3    | Task management API      |
-| 3: LangChain           | Week 4    | Agentic orchestration    |
-| 4: Frontend            | Weeks 5-6 | User interface           |
-| 5: Integration         | Week 7    | Full system working      |
-| 6: Production          | Week 8    | Production-ready         |
-| 7: Advanced (Optional) | Week 9+   | Vector DB, caching       |
+| Phase                  | Duration  | Key Deliverable            |
+| ---------------------- | --------- | -------------------------- |
+| 0: Setup               | Week 1    | Docker infrastructure      |
+| 1: FastMCP             | Week 2    | Browser automation tools   |
+| 2: Backend             | Week 3    | Task management API        |
+| 3: LangChain           | Week 4    | Agentic orchestration      |
+| 4: Frontend            | Weeks 5-6 | User interface             |
+| 5: Integration         | Week 7    | Full system working        |
+| 5.5: CI/CD Pipeline    | Week 7.5  | GitHub Actions automation  |
+| 6: Production          | Week 8    | Production-ready           |
+| 7: Advanced (Optional) | Week 9+   | Vector DB, caching         |
 
 **Total Time: 8 weeks to production, +optional enhancements**
 
 ---
 
-**Document Version**: 2.1  
-**Last Updated**: November 14, 2025  
-**Status**: Updated (devcontainer test execution permitted)
+**Document Version**: 2.2  
+**Last Updated**: November 17, 2025  
+**Status**: Updated (added Phase 5.5: CI/CD Pipeline with GitHub Actions)

@@ -3,7 +3,7 @@ LangChain orchestrator client.
 Communicates with the LangChain service for task execution.
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, Callable
 
 import httpx
 from loguru import logger
@@ -19,19 +19,31 @@ from .tasks import Task
 class LangChainClient:
     """Client for communicating with LangChain orchestrator service."""
 
-    def __init__(self, base_url: str = LANGCHAIN_URL):
+    def __init__(self, base_url: str = LANGCHAIN_URL, timeout: float = 30.0):
         self.base_url = base_url
+        self._timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
 
     async def __aenter__(self):
         """Async context manager entry."""
-        self._client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0)
+        self._client = httpx.AsyncClient(base_url=self.base_url, timeout=self._timeout)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         if self._client:
             await self._client.aclose()
+            self._client = None
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client if opened.
+
+        Convenience method so callers not using the async context manager can
+        explicitly release resources. Safe to call multiple times.
+        """
+        if self._client:
+            await self._client.aclose()
+            self._client = None
 
     async def health_check(self) -> bool:
         """
@@ -56,7 +68,7 @@ class LangChainClient:
             return False
 
     async def execute_task(
-        self, task: Task, event_callback: Optional[callable] = None
+        self, task: Task, event_callback: Optional[Callable[..., Any]] = None
     ) -> dict[str, Any]:
         """
         Execute a task via LangChain orchestrator.

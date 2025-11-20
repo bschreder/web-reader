@@ -20,15 +20,18 @@ def ollama_url() -> str:
 
 @pytest.fixture(scope="session")
 def fastmcp_url() -> str:
-    """Get FastMCP service URL from environment."""
-    host = os.getenv("FASTMCP_HOST", "fastmcp")
-    port = os.getenv("FASTMCP_PORT", "3000")
+    """Get FastMCP service URL from environment.
+
+    Defaults align with docker-compose: MCP on 3100, container name 'web-reader-fastmcp'.
+    """
+    host = os.getenv("FASTMCP_HOST", "web-reader-fastmcp")
+    port = os.getenv("FASTMCP_PORT", "3100")
     return f"http://{host}:{port}"
 
 
 @pytest.fixture
 def skip_if_no_ollama(ollama_url: str):
-    """Skip test if Ollama service not available."""
+    """Fail test if Ollama service not available."""
     import socket
 
     host = ollama_url.split("://")[1].split(":")[0]
@@ -40,12 +43,12 @@ def skip_if_no_ollama(ollama_url: str):
     sock.close()
 
     if result != 0:
-        pytest.skip(f"Ollama not available at {ollama_url}")
+        pytest.fail(f"Ollama not available at {ollama_url}")
 
 
 @pytest.fixture
 def skip_if_no_fastmcp(fastmcp_url: str):
-    """Skip test if FastMCP service not available."""
+    """Fail test if FastMCP service not available."""
     import socket
 
     host = fastmcp_url.split("://")[1].split(":")[0]
@@ -57,4 +60,4 @@ def skip_if_no_fastmcp(fastmcp_url: str):
     sock.close()
 
     if result != 0:
-        pytest.skip(f"FastMCP not available at {fastmcp_url}")
+        pytest.fail(f"FastMCP not available at {fastmcp_url}")

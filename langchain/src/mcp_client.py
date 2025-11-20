@@ -8,13 +8,13 @@ from typing import Any, Optional
 import httpx
 from loguru import logger
 
-from .config import FASTMCP_URL
+from .config import FASTMCP_URL, FASTMCP_HOST, FASTMCP_HEALTH_PORT
 
 
 class MCPClient:
     """Client for communicating with FastMCP server."""
 
-    def __init__(self, base_url: str = FASTMCP_URL):
+    def __init__(self, base_url: str = FASTMCP_URL, health_url: Optional[str] = None):
         """
         Initialize MCP client.
 
@@ -22,6 +22,16 @@ class MCPClient:
             base_url: Base URL of FastMCP server
         """
         self.base_url = base_url
+        # Health server runs on a separate port; default derive from host + FASTMCP_HEALTH_PORT
+        if health_url is None:
+            # Extract host from base_url (assumes http://host:port)
+            try:
+                host = base_url.split("://", 1)[1].split(":")[0]
+            except Exception:
+                host = FASTMCP_HOST
+            self.health_url = f"http://{host}:{FASTMCP_HEALTH_PORT}"
+        else:
+            self.health_url = health_url
         self._client: Optional[httpx.AsyncClient] = None
 
     async def __aenter__(self):
@@ -98,15 +108,11 @@ class MCPClient:
         Returns:
             True if healthy, False otherwise
         """
+
         try:
-            if not self._client:
-                async with httpx.AsyncClient(
-                    base_url=self.base_url, timeout=5.0
-                ) as client:
-                    response = await client.get("/health")
-                    return response.status_code == 200
-            else:
-                response = await self._client.get("/health")
+            url = f"{self.health_url}/health"
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(url)
                 return response.status_code == 200
 
         except Exception as e:

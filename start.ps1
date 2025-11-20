@@ -101,12 +101,12 @@ function Start-App([switch]$RebuildFlag, [switch]$AttachFlag, [string[]]$Svc) {
   # Use static override file if -Debug specified
   $overrideArgs = @()
   if ($Debug) {
-    $overrideFile = Join-Path $appDir 'docker-compose.override.yml'
+    $overrideFile = Join-Path $appDir 'docker-compose.dev.yml'
     if (-not (Test-Path $overrideFile)) {
-      Write-Warn "Debug override requested but docker-compose.override.yml not found. Create it under docker/."
+      Write-Warn "Debug override requested but docker-compose.dev.yml not found. Create it under docker/."
     } else {
-      $overrideArgs += @('-f', 'docker-compose.yml', '-f', 'docker-compose.override.yml')
-      Write-Info "Debug override enabled via docker-compose.override.yml"
+      $overrideArgs += @('-f', 'docker-compose.yml', '-f', 'docker-compose.dev.yml')
+      Write-Info "Debug override enabled via docker-compose.dev.yml"
     }
   }
 

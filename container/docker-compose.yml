@@ -57,6 +57,11 @@ services:
       echo 'Model pull requested.'
       "
 
+networks:
+  default:
+    external: true
+    name: external-services-network
+
 volumes:
   ollama:
     driver: local

@@ -58,6 +58,13 @@
   ],
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   
+  // Python analysis - resolve imports from service src/ directories
+  "python.analysis.extraPaths": [
+    "backend/src",
+    "langchain/src",
+    "fastmcp/src"
+  ],
+  
   // Per-project Python settings
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
@@ -65,6 +72,10 @@
     "editor.codeActionsOnSave": {
       "source.organizeImports": "explicit"
     }
-  }
+  },
+  
+  // Test UI behavior (explicit to prevent auto-additions)
+  "testing.automaticallyOpenTestResults": "neverOpen",
+  "testing.followRunningTest": false
 }
 

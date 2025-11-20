@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.agent import create_research_agent, execute_research_task
+from src.agent import execute_research_task
 from src.callbacks import WebSocketCallbackHandler
 from src.mcp_client import MCPClient
 
@@ -15,14 +15,11 @@ class TestResearchWorkflow:
     @pytest.mark.slow
     async def test_simple_research_task(
         self,
-        skip_if_no_services,
         fastmcp_url,
         test_question_simple,
     ):
         """Test executing a simple research task end-to-end."""
-        client = MCPClient(fastmcp_url)
-
-        try:
+        async with MCPClient(fastmcp_url) as client:
             # Create mock WebSocket for callbacks
             class MockWebSocket:
                 async def send_json(self, data):
@@ -48,25 +45,15 @@ class TestResearchWorkflow:
             # Check for expected fields
             assert "status" in result or "answer" in result or "output" in result
 
-        except Exception as e:
-            # E2E tests may fail if services not fully operational
-            pytest.skip(f"Research workflow incomplete (services may be starting): {e}")
-        finally:
-            await client.close()
-
     @pytest.mark.asyncio
     @pytest.mark.e2e
     async def test_research_with_seed_url(
         self,
-        skip_if_no_services,
         fastmcp_url,
         test_question_with_url,
     ):
         """Test research task with seed URL provided."""
-        client = MCPClient(fastmcp_url)
-
-        try:
-
+        async with MCPClient(fastmcp_url) as client:
             class MockWebSocket:
                 async def send_json(self, data):
                     pass
@@ -86,17 +73,11 @@ class TestResearchWorkflow:
 
             assert result is not None
 
-        except Exception as e:
-            pytest.skip(f"Research with seed URL failed: {e}")
-        finally:
-            await client.close()
-
     @pytest.mark.asyncio
     @pytest.mark.e2e
     @pytest.mark.slow
     async def test_research_artifacts_collected(
         self,
-        skip_if_no_services,
         fastmcp_url,
         test_question_simple,
     ):
@@ -106,10 +87,7 @@ class TestResearchWorkflow:
         # Reset collector before test
         reset_collector()
 
-        client = MCPClient(fastmcp_url)
-
-        try:
-
+        async with MCPClient(fastmcp_url) as client:
             class MockWebSocket:
                 async def send_json(self, data):
                     pass
@@ -128,30 +106,22 @@ class TestResearchWorkflow:
 
             # Check if artifacts were collected
             collector = get_collector()
-            artifacts = collector.get_artifacts()
 
-            # Should have some record of navigation or tool calls
-            assert artifacts is not None
-            assert isinstance(artifacts, dict)
+            # Should have some citations from page visits
+            assert collector.citations is not None
+            assert isinstance(collector.citations, list)
 
-        except Exception as e:
-            pytest.skip(f"Artifact collection test failed: {e}")
-        finally:
-            reset_collector()
-            await client.close()
+        # Reset after test
+        reset_collector()
 
     @pytest.mark.asyncio
     @pytest.mark.e2e
     async def test_error_handling_invalid_url(
         self,
-        skip_if_no_services,
         fastmcp_url,
     ):
         """Test error handling when given invalid URL."""
-        client = MCPClient(fastmcp_url)
-
-        try:
-
+        async with MCPClient(fastmcp_url) as client:
             class MockWebSocket:
                 async def send_json(self, data):
                     pass
@@ -172,9 +142,3 @@ class TestResearchWorkflow:
             # Should handle error gracefully
             assert result is not None
             # May contain error message or partial result
-
-        except Exception as e:
-            # Errors are expected for invalid URLs
-            pass
-        finally:
-            await client.close()

@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from loguru import logger
+import os
 
 from src.browser import cleanup_browser, cleanup_task_context
 from src.config import configure_logging
@@ -54,11 +55,14 @@ class _HealthHandler(BaseHTTPRequestHandler):
         return
 
 
-def _start_health_server(port: int = 3001):
+def _start_health_server(port: int | None = None):
     global _health_server, _health_thread
     if _health_server is not None:
         return
     try:
+        if port is None:
+            # Default to 3101 to match docker-compose; allow override via env
+            port = int(os.getenv("HEALTH_SERVER_PORT", "3101"))
         server = ThreadingHTTPServer(("0.0.0.0", port), _HealthHandler)
         thread = threading.Thread(target=server.serve_forever, name="fastmcp-health", daemon=True)
         thread.start()

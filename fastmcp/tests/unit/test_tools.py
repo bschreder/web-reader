@@ -79,14 +79,13 @@ class TestNavigateTo:
         mock_response = MagicMock()
         mock_page.goto = AsyncMock(return_value=mock_response)
         mock_response.status = HTTPStatus.NOT_FOUND
+        mocker.patch("src.tools.get_current_page", return_value=mock_page)
         mocker.patch("src.tools.is_domain_allowed", return_value=True)
         mocker.patch("src.tools.enforce_rate_limit", AsyncMock())
 
         result = await navigate_to("https://example.com/notfound")
 
         assert result["status"] == "error"
-        assert result["http_status"] == HTTPStatus.NOT_FOUND
-
         assert result["http_status"] == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio

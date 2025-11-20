@@ -52,6 +52,9 @@ venv.bak/
 *.manifest
 *.spec
 
+# Ruff
+.ruff-cache/
+
 # Unit test / coverage
 .pytest_cache/
 .coverage

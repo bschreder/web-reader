@@ -1,6 +1,14 @@
 # Devcontainer with Python 3.13 and Node.js 24
 FROM mcr.microsoft.com/devcontainers/base:noble
 
+# Build-time args for creating the non-root user. Declare before any use of USER.
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# Ensure user-site scripts are available in the image PATH
+ENV PATH=/home/${USERNAME}/.local/bin:${PATH}
+
 # Install dependencies
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -36,9 +44,6 @@ RUN wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsof
 USER ${USERNAME}
 
 # Create workspace folder and set user
-ARG USERNAME=vscode
-ARG USER_UID=1000
-ARG USER_GID=1000
 RUN if ! getent group ${USERNAME}; then groupadd --gid ${USER_GID} ${USERNAME}; fi \
     && if ! id -u ${USERNAME} >/dev/null 2>&1; then useradd -s /bin/bash --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME}; fi
 USER ${USERNAME}

@@ -6,6 +6,28 @@ from unittest.mock import AsyncMock, MagicMock
 from src.mcp_client import MCPClient
 
 
+class AsyncClientCtx:
+    """Small helper that mimics ``httpx.AsyncClient`` used as an async
+    context manager in ``src.mcp_client.health_check``.
+
+    The context yields the provided mock client instance and exposes an
+    ``aclose()`` coroutine so the real code can call ``aclose()`` without
+    error.
+    """
+
+    def __init__(self, mock_client):
+        self._mock = mock_client
+
+    async def __aenter__(self):
+        return self._mock
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def aclose(self):
+        return None
+
+
 class TestMCPClient:
     """Test MCP client functionality."""
 
@@ -94,13 +116,19 @@ class TestMCPClient:
         mock_http_client.get = AsyncMock(return_value=mock_response)
         mock_http_client.aclose = AsyncMock()
 
-        async with MCPClient(base_url="http://test:3000") as client:
-            client._client = mock_http_client
+        # Patch `httpx.AsyncClient` used inside `mcp_client.health_check` to
+        # return our mock_http_client via the reusable `AsyncClientCtx` helper.
+        mocker.patch(
+            "src.mcp_client.httpx.AsyncClient",
+            return_value=AsyncClientCtx(mock_http_client),
+        )
 
+        async with MCPClient(base_url="http://example.com:3000") as client:
             is_healthy = await client.health_check()
 
             assert is_healthy is True
-            mock_http_client.get.assert_called_once_with("/health")
+            expected_url = f"{client.health_url}/health"
+            mock_http_client.get.assert_called_once_with(expected_url)
 
     @pytest.mark.asyncio
     async def test_health_check_failure(self, mocker):
@@ -109,9 +137,12 @@ class TestMCPClient:
         mock_http_client.get = AsyncMock(side_effect=Exception("Connection refused"))
         mock_http_client.aclose = AsyncMock()
 
-        async with MCPClient(base_url="http://test:3000") as client:
-            client._client = mock_http_client
+        mocker.patch(
+            "src.mcp_client.httpx.AsyncClient",
+            return_value=AsyncClientCtx(mock_http_client),
+        )
 
+        async with MCPClient(base_url="http://test:3000") as client:
             is_healthy = await client.health_check()
 
             assert is_healthy is False

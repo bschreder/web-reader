@@ -55,16 +55,17 @@ class TestAPIWorkflow:
                 await client.post("/api/tasks", json=task_data.model_dump())
 
             # List tasks
-            response = await client.get("/api/history")
+            response = await client.get("/api/tasks")
             assert response.status_code == 200
 
-            history = response.json()
-            assert "tasks" in history or isinstance(history, list)
+            task_list = response.json()
+            assert "tasks" in task_list
+            assert task_list["total"] >= 2  # At least our 2 tasks
 
     @pytest.mark.asyncio
     @pytest.mark.e2e
     @pytest.mark.slow
-    async def test_task_execution_and_completion(self, api_url: str, skip_if_no_services: bool):
+    async def test_task_execution_and_completion(self, api_url: str):
         """Test full task execution from start to completion."""
         async with AsyncClient(base_url=api_url, timeout=60.0) as client:
             # Create simple task
@@ -109,9 +110,9 @@ class TestAPIWorkflow:
     @pytest.mark.asyncio
     @pytest.mark.e2e
     async def test_task_cancellation(self, api_url: str):
-        """Test cancelling a running task."""
+        """Test cancelling a task."""
         async with AsyncClient(base_url=api_url, timeout=30.0) as client:
-            # Create long-running task
+            # Create task
             task_data = TaskCreate(
                 question="Complex research requiring lots of pages",
                 max_depth=5,
@@ -125,20 +126,20 @@ class TestAPIWorkflow:
             data = response.json()
             task_id = data["task_id"]
 
-            # Give it a moment to start
-            await asyncio.sleep(1)
+            # Verify task was created
+            response = await client.get(f"/api/tasks/{task_id}")
+            assert response.status_code == 200
+            status_data = response.json()
+            # Task may complete quickly or still be running
+            assert status_data.get("status") in ["running", "created", "completed"]
 
-            # Cancel the task
+            # Delete the task
             response = await client.delete(f"/api/tasks/{task_id}")
             assert response.status_code in [200, 204]
 
-            # Verify cancellation
+            # After deletion, task should not be found
             response = await client.get(f"/api/tasks/{task_id}")
-            assert response.status_code == 200
-
-            status_data = response.json()
-            # Should be cancelled or in process of cancelling
-            assert status_data.get("status") in ["cancelled", "running", "created"]
+            assert response.status_code == 404
 
     @pytest.mark.asyncio
     @pytest.mark.e2e

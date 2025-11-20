@@ -148,6 +148,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 - Use type hints for clarity and type checking.
 - Prefer Pydantic models for input validation.
 - Use pytest for testing but prefer unittest.mock for mocking.
+- Do NOT use virtual environments inside containers; rely on container isolation.
 
 ### File Watching (Python Services)
 - Use `watchfiles` to restart application on source changes.

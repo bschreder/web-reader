@@ -18,7 +18,9 @@ SERVICE_PORT = int(os.getenv("LANGCHAIN_PORT", "8001"))
 # ============================================================================
 
 FASTMCP_HOST = os.getenv("FASTMCP_HOST", "localhost")
-FASTMCP_PORT = int(os.getenv("FASTMCP_PORT", "3000"))
+# Default FastMCP MCP server port is 3100 (compose default)
+FASTMCP_PORT = int(os.getenv("FASTMCP_PORT", "3100"))
+FASTMCP_HEALTH_PORT = int(os.getenv("FASTMCP_HEALTH_PORT", "3101"))
 FASTMCP_URL = f"http://{FASTMCP_HOST}:{FASTMCP_PORT}"
 
 # ============================================================================
@@ -28,7 +30,8 @@ FASTMCP_URL = f"http://{FASTMCP_HOST}:{FASTMCP_PORT}"
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "localhost")
 OLLAMA_PORT = int(os.getenv("OLLAMA_PORT", "11434"))
 OLLAMA_BASE_URL = f"http://{OLLAMA_HOST}:{OLLAMA_PORT}"
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+# Default model aligned with infrastructure docker-compose
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 
 # ============================================================================
 # Agent Configuration
