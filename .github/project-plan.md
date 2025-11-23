@@ -1,6 +1,7 @@
 # Web Reader - Project Implementation Plan (v2)
 
-This document outlines the phased implementation plan for building the Web Reader system.  Each phase has clear deliverables and dependencies. This version has:
+This document outlines the phased implementation plan for building the Web Reader system. Each phase has clear deliverables and dependencies. This version has:
+
 - Multistage Dockerfile requirements (base/dev/prod) for all application services
 - Development vs production compose definitions (`docker/docker-compose.yml` + `docker/docker-compose.dev.yml` layering)
 - Hot reload strategy (watchfiles for Python, Vite HMR for frontend)
@@ -43,11 +44,11 @@ This document outlines the phased implementation plan for building the Web Reade
 #### Multistage Dockerfile Requirements
 
 For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
-- [ ] Stage `base`: runtime (Python 3.13 slim / Node 24 alpine), system deps, non-root user
-- [ ] Stage `dev`: install dev dependencies (pytest, pytest-cov, watchfiles, debugpy / vite, vitest, playwright), set env (`ENVIRONMENT=development`), expose debug ports, entrypoint uses watcher/HMR
-- [ ] Stage `prod`: install production deps only, copy source, drop build caches, non-root execution, healthcheck friendly CMD
-- [ ] Verify images build with: `docker build --target dev` and `docker build --target prod`
 
+- [ ] Stage `base`: runtime (Python 3.13 slim / Node 24 alpine), system deps, non-root user
+- [ ] Stage `dev`: install dev dependencies (pytest, pytest-cov, watchfiles, debugpy / vite, vitest, playwright) via Poetry for Python services and npm for frontend, set env (`ENVIRONMENT=development`), expose debug ports, entrypoint uses watcher/HMR
+- [ ] Stage `prod`: install production deps only (Poetry groups `main`/`test`/`debug` as appropriate for Python services), copy source, drop build caches, non-root execution, healthcheck friendly CMD
+- [ ] Verify images build with: `docker build --target dev` and `docker build --target prod`
 
 #### Project Structure
 
@@ -92,6 +93,7 @@ For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
 - [ ] Document configuration options in README
 
 #### Testing Infrastructure (Foundational Definitions Only)
+
 - [ ] Adopt test layout per project: `tests/unit`, `tests/integration`, `tests/e2e`
 - [ ] Document test execution via devcontainer shell
 - [ ] Add coverage tooling (pytest-cov / vitest + c8) to dev stage dependencies
@@ -153,6 +155,7 @@ For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
 - [ ] robots.txt parsing and compliance (optional feature)
 
 #### Testing (FastMCP)
+
 Directory layout: `fastmcp/tests/{unit,integration,e2e}`
 
 - [ ] Unit tests for rate limiting logic
@@ -162,26 +165,32 @@ Directory layout: `fastmcp/tests/{unit,integration,e2e}`
 - [ ] Verify logging to console and file (based on `.env`)
 
 Unit (>80% coverage):
+
 - [ ] `tests/unit/test_rate_limiting.py`
 - [ ] `tests/unit/test_domain_filtering.py`
 - [ ] `tests/unit/test_browser_management.py`
 - [ ] `tests/unit/test_tools.py`
 
 Integration (mock external pieces except Playwright container):
+
 - [ ] `tests/integration/test_playwright_integration.py`
 - [ ] `tests/integration/test_tool_execution.py`
 
 E2E (live Playwright + real navigation):
+
 - [ ] `tests/e2e/test_full_workflow.py`
 
 Devcontainer (preferred):
+
 ```
 cd fastmcp
 pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
 pytest tests/integration -v
 pytest tests/e2e -v --maxfail=1
 ```
+
 Optional inside container:
+
 ```
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
 ```
@@ -256,6 +265,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 - [ ] No database required in MVP; add DB integration in future phase
 
 #### Testing (Backend)
+
 Directory layout: `backend/tests/{unit,integration,e2e}`
 
 - [ ] Unit tests for API endpoints
@@ -268,13 +278,16 @@ Integration: REST + WebSocket with mocked LangChain / FastMCP
 E2E: full task lifecycle with live orchestrator & tool server
 
 Devcontainer:
+
 ```
 cd backend
 pytest tests/unit --cov=src --cov-branch --cov-report=term
 pytest tests/integration -v
 pytest tests/e2e -v
 ```
+
 Optional container:
+
 ```
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend pytest tests/unit
 ```
@@ -348,6 +361,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 - [ ] Recovery suggestions for common errors
 
 #### Testing (LangChain)
+
 Directory layout: `langchain/tests/{unit,integration,e2e}`
 
 - [ ] Unit tests for tool wrappers
@@ -360,13 +374,16 @@ Integration: agent execution with mocked LLM / simulated MCP
 E2E: research workflow w/ live Ollama + FastMCP
 
 Devcontainer:
+
 ```
 cd langchain
 pytest tests/unit --cov=src --cov-branch --cov-report=term
 pytest tests/integration -v
 pytest tests/e2e -v
 ```
+
 Optional container:
+
 ```
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain pytest tests/unit
 ```
@@ -443,6 +460,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 - [ ] History page (`/history`) - Past tasks
 
 #### Testing (Frontend)
+
 Directory layout: `frontend/tests/{unit,integration,e2e,browser}`
 
 - [ ] Component unit tests (Vitest)
@@ -456,13 +474,16 @@ Integration: task submission flow (mock backend/WebSocket)
 E2E: full user journey with running stack
 
 Devcontainer:
+
 ```
 cd frontend
 npm run test:unit
 npm run test:browser
 npx playwright test tests/e2e
 ```
+
 Optional container:
+
 ```
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:unit
 ```
@@ -496,6 +517,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 ### Tasks
 
 #### System Integration
+
 - [ ] Launch dev stack: `docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d`
 - [ ] Validate health endpoints & debug ports reachable
 - [ ] Confirm hot reload triggers (edit a file in each service)
@@ -555,7 +577,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 ✅ Full stack integrated (dev mode & prod build)  
 ✅ All use case scenarios pass E2E tests  
 ✅ Coverage reports >80% each project  
-✅ Performance targets validated  (60s for 95% of queries)
+✅ Performance targets validated (60s for 95% of queries)
 ✅ Observability confirmed  
 ✅ Documentation (README + testing guide) updated
 
@@ -593,12 +615,14 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 #### Build Jobs (Per Project)
 
 Each project job should:
+
 - [ ] Check out repository code
 - [ ] Set up Docker Buildx for multi-stage builds
 - [ ] Build dev stage Docker image (includes test dependencies)
 - [ ] Cache Docker layers for faster builds
 
 **Frontend Build:**
+
 - [ ] Set up Node.js 24 environment
 - [ ] Install dependencies with caching
 - [ ] Run linting (`npm run lint`)
@@ -607,6 +631,7 @@ Each project job should:
 - [ ] Build production Docker image (target: `prod`)
 
 **Backend Build:**
+
 - [ ] Set up Python 3.13 environment
 - [ ] Install dependencies with pip cache
 - [ ] Run linting (`ruff check` or `flake8`)
@@ -614,12 +639,14 @@ Each project job should:
 - [ ] Build production Docker image (target: `prod`)
 
 **LangChain Build:**
+
 - [ ] Set up Python 3.13 environment
 - [ ] Install dependencies with pip cache
 - [ ] Run linting and type checking
 - [ ] Build production Docker image (target: `prod`)
 
 **FastMCP Build:**
+
 - [ ] Set up Python 3.13 environment
 - [ ] Install dependencies with pip cache
 - [ ] Run linting and type checking
@@ -628,6 +655,7 @@ Each project job should:
 #### Test Jobs (Per Project)
 
 **Frontend Tests:**
+
 - [ ] Run unit tests (`npm run test:unit`)
 - [ ] Run browser component tests (`npm run test:browser`)
 - [ ] Generate coverage report
@@ -635,6 +663,7 @@ Each project job should:
 - [ ] Upload coverage artifact
 
 **Backend Tests:**
+
 - [ ] Start required infrastructure (Ollama, Playwright) via Docker Compose
 - [ ] Run unit tests (`pytest tests/unit --cov=src --cov-branch`)
 - [ ] Run integration tests (`pytest tests/integration`)
@@ -644,6 +673,7 @@ Each project job should:
 - [ ] Cleanup infrastructure containers
 
 **LangChain Tests:**
+
 - [ ] Start required infrastructure (Ollama, FastMCP) via Docker Compose
 - [ ] Run unit tests with coverage
 - [ ] Run integration tests
@@ -653,6 +683,7 @@ Each project job should:
 - [ ] Cleanup infrastructure
 
 **FastMCP Tests:**
+
 - [ ] Start Playwright container via Docker Compose
 - [ ] Run unit tests with coverage
 - [ ] Run integration tests
@@ -714,22 +745,22 @@ on:
 jobs:
   detect-changes:
     # Detect which projects changed
-    
+
   build-frontend:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true'
     # Build and test frontend
-    
+
   build-backend:
     needs: detect-changes
     if: needs.detect-changes.outputs.backend == 'true'
     # Build and test backend
-    
+
   build-langchain:
     needs: detect-changes
     if: needs.detect-changes.outputs.langchain == 'true'
     # Build and test langchain
-    
+
   build-fastmcp:
     needs: detect-changes
     if: needs.detect-changes.outputs.fastmcp == 'true'
@@ -873,7 +904,9 @@ jobs:
 ## Success Metrics & Coverage Verification
 
 ### Phase Completion Criteria
+
 Each phase must meet these criteria before moving to the next:
+
 - [ ] All tasks completed
 - [ ] Unit tests (>80% statement/branch/function) for code-focused phases
 - [ ] Integration tests passing (where defined)
@@ -923,17 +956,17 @@ Each phase must meet these criteria before moving to the next:
 
 ## Timeline Summary
 
-| Phase                  | Duration  | Key Deliverable            |
-| ---------------------- | --------- | -------------------------- |
-| 0: Setup               | Week 1    | Docker infrastructure      |
-| 1: FastMCP             | Week 2    | Browser automation tools   |
-| 2: Backend             | Week 3    | Task management API        |
-| 3: LangChain           | Week 4    | Agentic orchestration      |
-| 4: Frontend            | Weeks 5-6 | User interface             |
-| 5: Integration         | Week 7    | Full system working        |
-| 5.5: CI/CD Pipeline    | Week 7.5  | GitHub Actions automation  |
-| 6: Production          | Week 8    | Production-ready           |
-| 7: Advanced (Optional) | Week 9+   | Vector DB, caching         |
+| Phase                  | Duration  | Key Deliverable           |
+| ---------------------- | --------- | ------------------------- |
+| 0: Setup               | Week 1    | Docker infrastructure     |
+| 1: FastMCP             | Week 2    | Browser automation tools  |
+| 2: Backend             | Week 3    | Task management API       |
+| 3: LangChain           | Week 4    | Agentic orchestration     |
+| 4: Frontend            | Weeks 5-6 | User interface            |
+| 5: Integration         | Week 7    | Full system working       |
+| 5.5: CI/CD Pipeline    | Week 7.5  | GitHub Actions automation |
+| 6: Production          | Week 8    | Production-ready          |
+| 7: Advanced (Optional) | Week 9+   | Vector DB, caching        |
 
 **Total Time: 8 weeks to production, +optional enhancements**
 

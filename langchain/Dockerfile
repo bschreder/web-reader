@@ -2,10 +2,18 @@
 FROM python:3.13-slim AS base
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    build-essential curl && \
+    build-essential curl pipx && \
+    pipx ensurepath && \
     rm -rf /var/lib/apt/lists/*
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+ENV PATH="/root/.local/bin:${PATH}"
+RUN pipx install poetry
+
+COPY pyproject.toml poetry.lock* ./
+# Configure Poetry to create a virtualenv inside the project at `.venv`
+ENV POETRY_VIRTUALENVS_CREATE=true
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV PATH="/app/.venv/bin:${PATH}"
+RUN poetry install --only main --no-root --no-interaction --no-ansi
 
 FROM base AS prod
 COPY . .
@@ -13,8 +21,8 @@ EXPOSE 8001
 CMD ["python", "server.py"]
 
 FROM base AS dev
-COPY requirements-debug.txt ./
-RUN pip install --no-cache-dir -r requirements-debug.txt
+COPY pyproject.toml poetry.lock* ./
+RUN poetry install --with debug,test --no-root --no-interaction --no-ansi
 COPY . .
 EXPOSE 8001 5672
 # Support optional debugpy via DEBUGPY_PORT env var

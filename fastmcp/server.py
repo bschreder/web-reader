@@ -8,13 +8,13 @@ lifecycle management, and tool registration.
 """
 
 import json
+import os
 import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from loguru import logger
-import os
 
 from src.browser import cleanup_browser, cleanup_task_context
 from src.config import configure_logging
@@ -118,7 +118,6 @@ if __name__ == "__main__":
     logger.info("Starting FastMCP server...")
     try:
         from fastmcp import FastMCP  # type: ignore
-        import os
 
         mcp = FastMCP("Web Reader Browser Tools", lifespan=lifespan_handler)
 

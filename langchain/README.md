@@ -56,10 +56,10 @@ LangChain Orchestrator (This Service)
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt
+poetry install
 
 # Install test dependencies
-pip install -r requirements-test.txt
+poetry install --with test
 ```
 
 ## Configuration

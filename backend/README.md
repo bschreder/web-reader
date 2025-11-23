@@ -17,11 +17,11 @@ Python backend service providing REST API and WebSocket endpoints for task manag
 ### Local Development
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies with Poetry
+poetry install --with test,debug
 
 # Run development server
-python -m uvicorn server:app --reload --host 0.0.0.0 --port 8000
+poetry run uvicorn server:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Docker

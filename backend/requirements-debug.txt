@@ -1,6 +1,0 @@
-# Debug-only dependencies for Backend service
-# Installed only in debug runs via compose override
-
-debugpy==1.8.1
-uvicorn[standard]>=0.30.0
-watchfiles>=0.21.0

@@ -31,8 +31,8 @@ FastMCP server providing browser automation tools via the Model Context Protocol
 ### Installation
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (Poetry)
+poetry install --with dev
 
 # For local development (installs browsers)
 playwright install chromium

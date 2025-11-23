@@ -6,7 +6,7 @@ Pydantic models for API requests/responses and internal task management.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, Annotated
 
 from pydantic import BaseModel, Field
 
@@ -49,7 +49,7 @@ class TaskCreate(BaseModel):
     question: str = Field(
         ..., min_length=1, max_length=1000, description="Research question"
     )
-    seed_url: Optional[str] = Field(None, description="Optional starting URL")
+    seed_url: Annotated[Optional[str], Field(None, description="Optional starting URL")] = None
     max_depth: int = Field(3, ge=1, le=5, description="Maximum link depth to follow")
     max_pages: int = Field(20, ge=1, le=50, description="Maximum pages to visit")
     time_budget: int = Field(120, ge=30, le=600, description="Time budget in seconds")

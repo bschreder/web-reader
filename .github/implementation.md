@@ -12,15 +12,19 @@ The system is built using a microservices architecture with 6 containerized comp
 4. FastMCP Server
 5. Playwright Browser
 6. Ollama LLM
+
 ## Multistage Dockerfile Pattern (Dev vs Prod)
 
 All application services (`frontend`, `backend`, `langchain`, `fastmcp`) MUST use a three-stage Dockerfile:
 
 1. `base` stage:
-   - Runtime base (Python 3.13 slim / Node 24 alpine)
-   - System packages only (no dev tooling)
-   - Non-root user created (`appuser` with UID/GID stable)
-   - Common environment variables (e.g. `PYTHONUNBUFFERED=1`, `NODE_ENV` default)
+
+- Runtime base (Python 3.13 slim / Node 24 alpine)
+- System packages only (no dev tooling)
+- Non-root user created (`appuser` with UID/GID stable)
+- Common environment variables (e.g. `PYTHONUNBUFFERED=1`, `NODE_ENV` default)
+- Python services install dependencies via Poetry using `pyproject.toml` (no direct `pip install -r requirements.txt` in images)
+
 2. `dev` stage:
    - Installs development dependencies (Python: `pytest`, `pytest-cov`, `pytest-asyncio`, `watchfiles`, `debugpy`; Node: `vite`, `vitest`, `playwright`, `@types/*`)
    - Sets `ENVIRONMENT=development`
@@ -29,22 +33,30 @@ All application services (`frontend`, `backend`, `langchain`, `fastmcp`) MUST us
 3. `prod` stage:
    - Installs production-only dependencies
    - Copies source code (no mounts)
-   - Optimized build (e.g. `poetry install --only main` or `pip install --no-cache-dir -r requirements.txt`)
-   - Final CMD minimal (uvicorn with tuned workers; Node static serve / nginx)
-   - Healthcheck readiness endpoints available.
 
-Example Python service Dockerfile sketch:
+- Optimized build (e.g. `poetry install --only main --no-root`)
+- Final CMD minimal (uvicorn with tuned workers; Node static serve / nginx)
+- Healthcheck readiness endpoints available.
+
+Example Python service Dockerfile sketch (using Poetry):
+
 ```Dockerfile
 FROM python:3.13-slim AS base
 ENV PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 RUN useradd -m -u 1001 appuser
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+  build-essential curl pipx && \
+  pipx ensurepath && \
+  rm -rf /var/lib/apt/lists/*
+ENV PATH="/root/.local/bin:${PATH}"
+RUN pipx install poetry
+COPY pyproject.toml poetry.lock* ./
+RUN poetry install --only main --no-root --no-interaction --no-ansi
 
 FROM base AS dev
-COPY requirements-test.txt requirements-test.txt
-RUN pip install --no-cache-dir -r requirements-test.txt && pip install watchfiles debugpy
+COPY pyproject.toml poetry.lock* ./
+RUN poetry install --with dev --no-root --no-interaction --no-ansi
 ENV ENVIRONMENT=development
 USER appuser
 COPY src ./src
@@ -59,6 +71,7 @@ CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 Example frontend Dockerfile sketch:
+
 ```Dockerfile
 FROM node:24-alpine AS base
 WORKDIR /app
@@ -85,15 +98,18 @@ HEALTHCHECK CMD wget -q -O /dev/null http://localhost || exit 1
 ## Development vs Production Compose
 
 Two compose files layer configurations:
+
 1. `docker/docker-compose.yml` (production baseline) – uses `prod` image target, minimal environment, persistent data volumes only.
 2. `docker/docker-compose.dev.yml` (development overlay) – selects `dev` build target, mounts source + test directories, exposes debug ports, overrides CMD with watcher/HMR.
 
 Launch (dev):
+
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d --build
 ```
 
 Example dev overrides snippet:
+
 ```yaml
 services:
   backend:
@@ -105,7 +121,8 @@ services:
       - ../backend/tests:/app/tests:rw
     environment:
       - ENVIRONMENT=development
-    command: ["watchfiles", "uvicorn server:app --host 0.0.0.0 --port 8000", "src/"]
+    command:
+      ["watchfiles", "uvicorn server:app --host 0.0.0.0 --port 8000", "src/"]
     ports:
       - "8000:8000"
       - "5671:5671"
@@ -125,15 +142,18 @@ services:
 ```
 
 ## Volume Mount Strategy
-| Mode | Source Code | Tests | Node/Python deps | Data (artifacts, models) |
-|------|-------------|-------|------------------|---------------------------|
-| Dev  | Mounted (rw)| Mounted| In image (dev + watchers) | Mounted named volumes |
-| Prod | Copied (ro) | Copied| Production only | Mounted named volumes |
+
+| Mode | Source Code  | Tests   | Node/Python deps          | Data (artifacts, models) |
+| ---- | ------------ | ------- | ------------------------- | ------------------------ |
+| Dev  | Mounted (rw) | Mounted | In image (dev + watchers) | Mounted named volumes    |
+| Prod | Copied (ro)  | Copied  | Production only           | Mounted named volumes    |
 
 Benefits: fast iteration in dev, immutable & predictable in prod.
 
 ## Test Directory Layout & Coverage
+
 Each project:
+
 ```
 <project>/
   src/
@@ -145,68 +165,85 @@ Each project:
 ```
 
 Coverage thresholds:
+
 - Statement: >80%
 - Branch: >80%
 - Function: >80%
 
-Python execution (devcontainer preferred):
+Python execution (devcontainer preferred, using Poetry):
+
 ```bash
-cd fastmcp && pytest tests/unit --cov=src --cov-branch
-cd backend && pytest tests/integration -v
-cd langchain && pytest tests/e2e -v
+cd fastmcp && poetry install --with dev && poetry run pytest tests/unit --cov=src --cov-branch
+cd backend && poetry install --with test && poetry run pytest tests/integration -v
+cd langchain && poetry install --with test && poetry run pytest tests/e2e -v
 ```
+
 Optional container exec:
+
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp pytest tests/unit --cov=src --cov-branch
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend pytest tests/integration -v
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain pytest tests/e2e -v
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp poetry run pytest tests/unit --cov=src --cov-branch
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend poetry run pytest tests/integration -v
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain poetry run pytest tests/e2e -v
 ```
 
 Frontend execution (devcontainer):
+
 ```bash
 cd frontend && npm run test:unit
 npm run test:browser
 npx playwright test tests/e2e
 ```
+
 Optional container exec:
+
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:unit
 ```
 
 ## Cross-Service End-to-End Tests
+
 Optional root-level `tests/e2e` can coordinate multi-service flows (e.g., submit task, observe streaming, verify citations). Use a dedicated ephemeral service in `docker-compose.dev.yml`:
+
 ```yaml
-  e2e-tests:
-    image: python:3.13-slim
-    working_dir: /workspace
-    volumes:
-      - ../tests/e2e:/workspace/tests/e2e:ro
-    depends_on:
-      - backend
-      - langchain
-      - fastmcp
-      - ollama
-    command: ["bash", "-c", "pip install pytest pytest-asyncio && pytest tests/e2e -v"]
+e2e-tests:
+  image: python:3.13-slim
+  working_dir: /workspace
+  volumes:
+    - ../tests/e2e:/workspace/tests/e2e:ro
+  depends_on:
+    - backend
+    - langchain
+    - fastmcp
+    - ollama
+  command:
+    ["bash", "-c", "pip install pytest pytest-asyncio && pytest tests/e2e -v"]
 ```
 
 ## Start Script Integration (`start.ps1`)
+
 The PowerShell script should optionally layer development compose file:
+
 - Default (docker mode): production-only compose
 - With dev flag (future enhancement) or internal logic: `docker/docker-compose.yml` + `docker/docker-compose.dev.yml`
-Ensure help text documents how dev overlay is applied for hot reload.
+  Ensure help text documents how dev overlay is applied for hot reload.
 
 ## Async & Streaming Conventions
+
 Python services:
+
 - Public I/O functions use `async def`.
 - Long-running or multi-step operations stream progress via WebSocket callbacks (agent thoughts, tool invocations, results).
 - Tools return structured JSON (status, data, error fields) instead of raising unhandled exceptions.
 
 Frontend:
+
 - WebSocket client handles incremental events; UI updates are diff-based.
 - Avoid blocking operations in event handlers; leverage React state for streaming.
 
 ## Adding New Services
+
 When introducing another service:
+
 1. Create multistage Dockerfile with same pattern.
 2. Add service section to both compose files (prod target / dev target overrides).
 3. Implement test scaffolding & coverage.
@@ -214,6 +251,7 @@ When introducing another service:
 5. Extend `start.ps1` only if orchestration semantics differ.
 
 ## Summary
+
 This implementation guide codifies dev vs prod container strategy, supports test execution via devcontainer shell (preferred) or inside dev-stage containers, and documents async/streaming patterns required for reliable agentic behavior.
 
 ## LangChain Agent Implementation
@@ -1104,33 +1142,44 @@ LOG_FILE=logs/frontend.log
 Pino initialization (e.g., `app/lib/logger.ts`):
 
 ```ts
-import pino from 'pino'
+import pino from "pino";
 
-const LOG_LEVEL = (import.meta.env?.LOG_LEVEL ?? process.env.LOG_LEVEL ?? 'info') as pino.LevelWithSilent
-const LOG_TARGET = (import.meta.env?.LOG_TARGET ?? process.env.LOG_TARGET ?? 'console')
-const LOG_FILE = import.meta.env?.LOG_FILE ?? process.env.LOG_FILE ?? 'logs/frontend.log'
+const LOG_LEVEL = (import.meta.env?.LOG_LEVEL ??
+  process.env.LOG_LEVEL ??
+  "info") as pino.LevelWithSilent;
+const LOG_TARGET =
+  import.meta.env?.LOG_TARGET ?? process.env.LOG_TARGET ?? "console";
+const LOG_FILE =
+  import.meta.env?.LOG_FILE ?? process.env.LOG_FILE ?? "logs/frontend.log";
 
-const isDev = process.env.NODE_ENV !== 'production'
+const isDev = process.env.NODE_ENV !== "production";
 
-const targets: any[] = []
+const targets: any[] = [];
 
-if (isDev && LOG_TARGET !== 'file') {
+if (isDev && LOG_TARGET !== "file") {
   targets.push({
-    target: 'pino-pretty',
-    options: { colorize: true, singleLine: false, translateTime: 'SYS:standard' },
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      singleLine: false,
+      translateTime: "SYS:standard",
+    },
     level: LOG_LEVEL,
-  })
+  });
 }
 
-if (LOG_TARGET === 'file' || LOG_TARGET === 'both') {
+if (LOG_TARGET === "file" || LOG_TARGET === "both") {
   targets.push({
-    target: 'pino/file',
+    target: "pino/file",
     options: { destination: LOG_FILE, mkdir: true },
     level: LOG_LEVEL,
-  })
+  });
 }
 
-export const logger = pino({ level: LOG_LEVEL }, targets.length ? pino.transport({ targets }) : undefined)
+export const logger = pino(
+  { level: LOG_LEVEL },
+  targets.length ? pino.transport({ targets }) : undefined
+);
 ```
 
 ### API Client

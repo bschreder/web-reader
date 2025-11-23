@@ -8,6 +8,7 @@ from typing import Any, Optional
 from langchain_core.callbacks import BaseCallbackHandler
 from loguru import logger
 
+from .collector import get_collector, reset_collector
 from .config import (
     AGENT_TEMPERATURE,
     AGENT_VERBOSE,
@@ -18,8 +19,6 @@ from .config import (
 )
 from .mcp_client import MCPClient
 from .tools import create_langchain_tools
-from .collector import get_collector, reset_collector
-
 
 # ============================================================================
 # ReAct Prompt Template
@@ -79,64 +78,43 @@ def create_research_agent(
     Returns:
         Configured AgentExecutor
     """
-    # Create LLM (import locally to reduce import-time coupling)
-    from langchain_community.chat_models import ChatOllama  # type: ignore
+    # Build the chat model instance (ChatOllama) with callbacks
+    try:
+        from langchain_ollama import ChatOllama  # type: ignore
+    except Exception:
+        try:
+            from langchain_ollama.chat_models import ChatOllama  # type: ignore
+        except Exception:
+            raise ImportError(
+                "ChatOllama integration not found. Install `langchain-ollama` or a compatible package."
+            )
 
     llm = ChatOllama(
         base_url=OLLAMA_BASE_URL,
         model=OLLAMA_MODEL,
         temperature=temperature,
         verbose=verbose,
-    )
-
-    # Create tools
-    tools = create_langchain_tools(mcp_client)
-
-    # Create prompt (import locally to support multiple LC versions)
-    try:
-        from langchain.prompts import PromptTemplate  # type: ignore
-    except Exception:
-        from langchain_core.prompts import PromptTemplate  # type: ignore
-
-    prompt = PromptTemplate.from_template(REACT_PROMPT)
-
-    # Create agent (import locally for compatibility across LC versions)
-    try:
-        from langchain.agents import create_react_agent  # type: ignore
-    except Exception:  # Fallback for older/newer versions
-        from langchain.agents.react.base import create_react_agent  # type: ignore
-
-    agent = create_react_agent(llm=llm, tools=tools, prompt=prompt)
-
-    # Create executor
-    # Construct an AgentExecutor without importing the class directly (API varies by version)
-    agent_executor = type("AgentExecutorShim", (), {})()
-    # Use factory function to build a real executor via the public API
-    # Newer LangChain exposes AgentExecutor in langchain.agents, but to support a wider
-    # range of versions we import only the factory and build via its return type.
-    try:
-        from langchain.agents import AgentExecutor as _AgentExecutor  # type: ignore
-    except Exception:
-        # In some versions, AgentExecutor lives under different paths; attempt a fallback
-        from langchain.agents.agent import AgentExecutor as _AgentExecutor  # type: ignore
-
-    agent_executor = _AgentExecutor(
-        agent=agent,
-        tools=tools,
         callbacks=callbacks,
-        max_iterations=max_iterations,
-        max_execution_time=max_execution_time,
-        verbose=verbose,
-        handle_parsing_errors=True,  # Automatic retry on parsing errors
-        early_stopping_method="generate",  # Generate final answer on max iterations
-        return_intermediate_steps=True,
     )
 
-    logger.info(
-        f"Created research agent (model={OLLAMA_MODEL}, max_iterations={max_iterations})"
-    )
+    # Create tools and prompt
+    tools = create_langchain_tools(mcp_client)
+    # Prompt template is defined in `REACT_PROMPT` and will be provided
+    # as the `system_prompt` to `create_agent` below.
 
-    return agent_executor
+    # LangChain v1: use create_agent (no fallbacks); this repo targets v1.
+    try:
+        from langchain.agents import create_agent  # type: ignore
+
+        agent_executor = create_agent(
+            model=llm, tools=tools, system_prompt=REACT_PROMPT
+        )
+        logger.info(f"Created research agent via create_agent (model={OLLAMA_MODEL})")
+        return agent_executor
+    except Exception as exc:
+        raise ImportError(
+            "LangChain v1 `create_agent` API is required. Install langchain>=1.0.0."
+        ) from exc
 
 
 # ============================================================================
@@ -149,6 +127,10 @@ async def execute_research_task(
     mcp_client: MCPClient,
     callbacks: Optional[list[BaseCallbackHandler]] = None,
     seed_url: Optional[str] = None,
+    # Additional configuration options forwarded from the API layer.
+    # Some (like max_depth, max_pages, time_budget) are not used by the
+    # LangChain agent directly but are accepted here for interface
+    # compatibility. Unknown options are ignored.
     **kwargs,
 ) -> dict[str, Any]:
     """
@@ -164,13 +146,22 @@ async def execute_research_task(
     Returns:
         Dict with answer, citations, and metadata
     """
+
     try:
         # Reset collector for this run
         reset_collector()
 
+        # Extract agent-related kwargs we actually support; ignore the rest
+        agent_kwargs: dict[str, Any] = {}
+        for key in ("temperature", "max_iterations", "max_execution_time", "verbose"):
+            if key in kwargs:
+                agent_kwargs[key] = kwargs[key]
+
         # Create agent
         agent_executor = create_research_agent(
-            mcp_client, callbacks=callbacks, **kwargs
+            mcp_client,
+            callbacks=callbacks,
+            **agent_kwargs,
         )
 
         # Prepare input

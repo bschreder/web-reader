@@ -84,7 +84,8 @@ class TestAPIWorkflow:
             task_id = data["task_id"]
 
             # Poll for completion (with timeout)
-            max_wait = 45  # seconds
+            # max_wait = 45  # seconds
+            max_wait = 120  # seconds
             poll_interval = 2
             elapsed = 0
 
@@ -99,11 +100,18 @@ class TestAPIWorkflow:
                     # Task finished
                     if status == "completed":
                         assert "answer" in status_data or status_data.get("result")
+                    elif status == "failed":
+                        reason = (
+                            status_data.get("error")
+                            or "Task failed without a reason"
+                        )
+                        pytest.fail(f"Task failed: {reason}")
                     break
 
                 await asyncio.sleep(poll_interval)
                 elapsed += poll_interval
 
+            print("done")
             # If still running after max wait, that's okay for this test
             # The integration is working if we got valid status responses
 

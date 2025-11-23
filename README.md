@@ -255,9 +255,10 @@ OLLAMA_MODEL=llama3.2
 ```bash
 # Backend
 cd backend
-python3.13 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+# Install Poetry if needed: https://python-poetry.org/docs/
+poetry install
+# Run the development server
+poetry run uvicorn server:app --reload --host 0.0.0.0 --port 8000
 
 # Frontend
 cd frontend
@@ -269,13 +270,22 @@ npm install
 ```bash
 # Backend tests
 cd backend
-pytest
+poetry install --with test
+poetry run pytest
+
+cd ../fastmcp
+poetry install --with dev
+poetry run pytest
+
+cd ../langchain
+poetry install --with test
+poetry run pytest
 
 # Frontend tests
 cd frontend
 npm test
 
-# E2E tests
+# E2E tests (requires infra: Playwright + Ollama)
 npm run test:e2e
 ```
 
@@ -389,11 +399,32 @@ tail -f logs/backend.log logs/langchain.log logs/fastmcp.log
 
 ## 📚 Documentation
 
-- **[Requirements](./. github/requirements.md)** - Detailed system requirements
-- **[Use Cases](./.github/use-case.md)** - Practical usage scenarios
-- **[Implementation](./.github/implementation.md)** - Technical implementation guide
-- **[Project Plan](./.github/project-plan.md)** - Development roadmap
-- **[Copilot Instructions](./.github/copilot-instructions.md)** - AI assistant context
+### Documentation Map
+
+| Area | File | Purpose |
+|------|------|---------|
+| System Requirements | `.github/requirements.md` | WHAT & WHY, business + technical requirements |
+| Use Cases | `.github/use-case.md` | User scenarios & workflows |
+| Implementation | `.github/implementation.md` | HOW: patterns, Docker, agent examples |
+| Project Plan | `.github/project-plan.md` | Phases & roadmap |
+| Assistant Guide | `.github/copilot-instructions.md` | Concise rules for AI assistants |
+| Contributing | `.github/CONTRIBUTING.md` | Code style, testing, PR checklist |
+| FastMCP Service | `fastmcp/README.md` | Browser tools, rate limiting, domain filtering |
+| LangChain Service | `langchain/README.md` | Agent orchestration, tool wrappers |
+| Backend API | `backend/README.md` | REST/WebSocket endpoints, task lifecycle |
+| Frontend | `frontend/README.md` | SPA structure, dev commands |
+| Testing Overview | `README.TEST.md` | Test commands & coverage guidance |
+| Debugging | `README.DEBUG.md` | Dev vs prod, troubleshooting |
+| VS Code Dev Container | `README.VSCODE-TESTING.md` | Running tests inside devcontainer |
+
+> Tip: Start with requirements for context, then implementation for execution details.
+
+### Quick Links
+
+- Requirements: `./.github/requirements.md`
+- Implementation: `./.github/implementation.md`
+- Contributing: `./.github/CONTRIBUTING.md`
+- Assistant Guide: `./.github/copilot-instructions.md`
 
 ## 🤝 Contributing
 

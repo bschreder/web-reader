@@ -18,7 +18,7 @@ def stub_langchain_modules(monkeypatch):
     import types
     import sys
 
-    # Stub ChatOllama
+    # Stub ChatOllama (LangChain v1 uses langchain-ollama package)
     chat_models = types.ModuleType("chat_models")
 
     class DummyChatOllama:
@@ -26,10 +26,13 @@ def stub_langchain_modules(monkeypatch):
             self.kwargs = kwargs
 
     chat_models.ChatOllama = DummyChatOllama
-    langchain_community = types.ModuleType("langchain_community")
-    langchain_community.chat_models = chat_models
-    monkeypatch.setitem(sys.modules, "langchain_community", langchain_community)
-    monkeypatch.setitem(sys.modules, "langchain_community.chat_models", chat_models)
+    langchain_ollama = types.ModuleType("langchain_ollama")
+    # Support both from langchain_ollama import ChatOllama and
+    # from langchain_ollama.chat_models import ChatOllama
+    langchain_ollama.ChatOllama = DummyChatOllama
+    langchain_ollama.chat_models = chat_models
+    monkeypatch.setitem(sys.modules, "langchain_ollama", langchain_ollama)
+    monkeypatch.setitem(sys.modules, "langchain_ollama.chat_models", chat_models)
 
     # Stub PromptTemplate
     prompts_mod = types.ModuleType("prompts")
@@ -45,23 +48,17 @@ def stub_langchain_modules(monkeypatch):
     monkeypatch.setitem(sys.modules, "langchain", langchain_pkg)
     monkeypatch.setitem(sys.modules, "langchain.prompts", prompts_mod)
 
-    # Stub create_react_agent and AgentExecutor
+    # Stub create_agent (LangChain v1 API)
     agents_mod = types.ModuleType("agents")
 
-    def create_react_agent(llm, tools, prompt):
-        return {"llm": llm, "tools": tools, "prompt": prompt}
-
-    class AgentExecutor:
-        def __init__(self, agent, tools, callbacks=None, **kwargs):
-            self._agent = agent
-            self._tools = tools
-            self._callbacks = callbacks or []
-
+    class DummyAgent:
         async def ainvoke(self, inputs):
             return {"output": "stub", "intermediate_steps": []}
 
-    agents_mod.create_react_agent = create_react_agent
-    agents_mod.AgentExecutor = AgentExecutor
+    def create_agent(model, tools, system_prompt=None, **kwargs):
+        return DummyAgent()
+
+    agents_mod.create_agent = create_agent
     monkeypatch.setitem(sys.modules, "langchain.agents", agents_mod)
 
 

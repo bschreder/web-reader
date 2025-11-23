@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
-# Ensure user-local bin is on PATH so pip --user installs' scripts are available
+# Ensure user-local bin is on PATH so pipx/poetry-installed scripts are available
 export PATH="$HOME/.local/bin:$PATH"
+
+# Verify poetry is available
+if ! command -v poetry >/dev/null 2>&1; then
+  echo "Error: poetry not found on PATH. Current PATH: $PATH"
+  echo "Make sure the devcontainer image is rebuilt so Poetry is installed."
+  exit 1
+fi
 
 # Install frontend dependencies
 if [ -d "/workspaces/web-reader/frontend" ]; then
@@ -10,21 +17,12 @@ if [ -d "/workspaces/web-reader/frontend" ]; then
   npx --prefix /workspaces/web-reader/frontend playwright install chromium --with-deps || true
 fi
 
-# Install Python dependencies for all services
+# Install Python dependencies for all services using Poetry
 for svc in backend fastmcp langchain; do
   svcdir="/workspaces/web-reader/$svc"
-  if [ -d "$svcdir" ]; then
-    if [ -f "$svcdir/requirements-debug.txt" ]; then
-      python3 -m pip install -r "$svcdir/requirements-debug.txt"
-    fi
-
-    if [ -f "$svcdir/requirements-test.txt" ]; then
-      python3 -m pip install -r "$svcdir/requirements-test.txt"
-    fi
-
-    if [ -f "$svcdir/requirements.txt" ]; then
-      python3 -m pip install -r "$svcdir/requirements.txt"
-    fi
+  if [ -d "$svcdir" ] && [ -f "$svcdir/pyproject.toml" ]; then
+    echo "Installing Python dependencies for $svc via Poetry..."
+    (cd "$svcdir"  && poetry lock --no-interaction --no-ansi && poetry install --with test,debug --no-interaction --no-ansi)
   fi
 done
 

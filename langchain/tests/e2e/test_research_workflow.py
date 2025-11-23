@@ -6,6 +6,8 @@ from src.agent import execute_research_task
 from src.callbacks import WebSocketCallbackHandler
 from src.mcp_client import MCPClient
 
+from recorder_websocket import RecorderWebSocket
+
 
 class TestResearchWorkflow:
     """Test complete research workflows."""
@@ -20,13 +22,9 @@ class TestResearchWorkflow:
     ):
         """Test executing a simple research task end-to-end."""
         async with MCPClient(fastmcp_url) as client:
-            # Create mock WebSocket for callbacks
-            class MockWebSocket:
-                async def send_json(self, data):
-                    pass  # No-op for testing
-
-            mock_ws = MockWebSocket()
-            callback = WebSocketCallbackHandler(mock_ws)
+            # Create recorder WebSocket for callbacks (captures events)
+            recorder = RecorderWebSocket()
+            callback = WebSocketCallbackHandler(recorder)
 
             # Execute research task
             result = await execute_research_task(
@@ -45,6 +43,18 @@ class TestResearchWorkflow:
             # Check for expected fields
             assert "status" in result or "answer" in result or "output" in result
 
+            # Ensure at least one websocket event was emitted
+            assert len(recorder.messages) > 0, "No websocket events were recorded"
+            # At minimum expect an agent lifecycle event such as thinking/tool_call/finish
+            types = {m.get("type") for m in recorder.messages}
+            assert types & {
+                "agent:thinking",
+                "agent:tool_call",
+                "agent:finish",
+                "agent:thought",
+                "agent:tool_result",
+            }, f"Unexpected event types: {types}"
+
     @pytest.mark.asyncio
     @pytest.mark.e2e
     async def test_research_with_seed_url(
@@ -54,12 +64,8 @@ class TestResearchWorkflow:
     ):
         """Test research task with seed URL provided."""
         async with MCPClient(fastmcp_url) as client:
-            class MockWebSocket:
-                async def send_json(self, data):
-                    pass
-
-            mock_ws = MockWebSocket()
-            callback = WebSocketCallbackHandler(mock_ws)
+            recorder = RecorderWebSocket()
+            callback = WebSocketCallbackHandler(recorder)
 
             result = await execute_research_task(
                 question=test_question_with_url,
@@ -88,12 +94,8 @@ class TestResearchWorkflow:
         reset_collector()
 
         async with MCPClient(fastmcp_url) as client:
-            class MockWebSocket:
-                async def send_json(self, data):
-                    pass
-
-            mock_ws = MockWebSocket()
-            callback = WebSocketCallbackHandler(mock_ws)
+            recorder = RecorderWebSocket()
+            callback = WebSocketCallbackHandler(recorder)
 
             await execute_research_task(
                 question=test_question_simple,
@@ -122,13 +124,8 @@ class TestResearchWorkflow:
     ):
         """Test error handling when given invalid URL."""
         async with MCPClient(fastmcp_url) as client:
-            class MockWebSocket:
-                async def send_json(self, data):
-                    pass
-
-            mock_ws = MockWebSocket()
-            callback = WebSocketCallbackHandler(mock_ws)
-
+            recorder = RecorderWebSocket()
+            callback = WebSocketCallbackHandler(recorder)
             result = await execute_research_task(
                 question="What is this website about?",
                 seed_url="https://this-domain-definitely-does-not-exist-12345.com",

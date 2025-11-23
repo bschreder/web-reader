@@ -24,7 +24,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa -y && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1
 
-# Install pip and setuptools for Python 3.13
+# Install pip and setuptools for Python 3.13 as root
 RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13 && \
     python3.13 -m pip install --upgrade pip setuptools
 
@@ -42,6 +42,11 @@ RUN wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsof
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends powershell \
     && rm -rf /var/lib/apt/lists/* /tmp/packages-microsoft-prod.deb
 USER ${USERNAME}
+
+# Install pipx and Poetry as non-root user (developer tools)
+RUN python3.13 -m pip install --user pipx && \
+    python3.13 -m pipx ensurepath && \
+    curl -sSL https://install.python-poetry.org | python3.13 -
 
 # Create workspace folder and set user
 RUN if ! getent group ${USERNAME}; then groupadd --gid ${USER_GID} ${USERNAME}; fi \

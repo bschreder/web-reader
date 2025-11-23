@@ -378,6 +378,19 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Why**: Streamlines onboarding, ensures consistent toolchains, and allows interaction with external containers from within the dev environment.
 
+### Python Dependency Management
+
+**Requirement**: All Python services (`backend`, `langchain`, `fastmcp`) must use Poetry for dependency and environment management.
+
+**Details**:
+
+- Each Python project defines dependencies and groups (e.g., `test`, `debug`, `dev`) in a `pyproject.toml` managed by Poetry.
+- Container images install Python dependencies via `poetry install` in the Dockerfile `base`/`dev`/`prod` stages; `pip install -r requirements*.txt` is not used in new code paths.
+- Developers install dependencies inside the devcontainer with `poetry install` and run tools/tests via `poetry run`.
+- Existing `requirements*.txt` files may be maintained temporarily for reference or transitional tooling but are not the source of truth.
+
+**Why**: Poetry provides reproducible dependency resolution (via lockfiles), explicit dependency groups for dev/test/debug, and a consistent workflow across services.
+
 ### TR-01: Container Infrastructure
 
 **Requirement**: All services must run in isolated Docker containers with health checks and resource limits.

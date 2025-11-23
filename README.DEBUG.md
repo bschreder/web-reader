@@ -162,13 +162,15 @@ If you prefer to run FastMCP locally:
    ./stop.ps1 -Services fastmcp
    ```
 2. Set `FASTMCP_HOST=host.docker.internal` in `.env` (on Linux you may need an extra host mapping in compose).
-3. From `fastmcp/` run:
-   ```powershell
-   python -m venv .venv
-   .venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
-   python -m debugpy --listen 0.0.0.0:5673 --wait-for-client server.py
-   ```
+3. From `fastmcp/` run (use Poetry for local development):
+      ```powershell
+      # Install dependencies with Poetry
+      cd fastmcp
+      poetry install --with dev
+
+      # Start FastMCP under debugpy
+      python -m debugpy --listen 0.0.0.0:5673 --wait-for-client server.py
+      ```
 4. Attach VS Code to port 5673.
 
 ## Stopping Services
