@@ -1,13 +1,37 @@
-"""
-Pytest configuration and shared fixtures for LangChain orchestrator tests.
+"""Test bootstrap for LangChain tests.
+
+Loads `.env` files early (repo root, `langchain/`, or the test dir) so modules
+that read environment variables at import time see test/CI configuration.
+
+This uses `python-dotenv` for robust parsing; falling back to safe defaults
+after loading any `.env` entries so tests in the devcontainer can resolve
+service hostnames (`ws-ollama`, `fastmcp`).
 """
 
+from __future__ import annotations
+
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock
 
+from dotenv import load_dotenv
 import pytest
+
+
+# Load .env files early so modules that read env vars at import time see values.
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+for candidate in (ROOT / ".env", ROOT / "langchain" / ".env", HERE / ".env"):
+    load_dotenv(dotenv_path=str(candidate), override=False)
+
+# Provide sensible defaults for devcontainer/docker-compose test runs when a .env
+# file is not present. These will not overwrite env vars explicitly set.
+os.environ.setdefault("OLLAMA_HOST", "ws-ollama")
+os.environ.setdefault("OLLAMA_PORT", "11434")
+os.environ.setdefault("FASTMCP_HOST", "fastmcp")
+os.environ.setdefault("FASTMCP_PORT", "3100")
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))

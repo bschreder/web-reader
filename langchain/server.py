@@ -4,6 +4,7 @@ FastAPI server that executes research tasks using LangChain agent.
 """
 
 import sys
+from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -24,7 +25,7 @@ from src.mcp_client import close_mcp_client, get_mcp_client
 # Remove default logger
 logger.remove()
 
-# Add console handler
+# Add console handler (human-friendly)
 if LOG_TARGET in ("console", "both"):
     logger.add(
         sys.stderr,
@@ -33,7 +34,7 @@ if LOG_TARGET in ("console", "both"):
         colorize=True,
     )
 
-# Add file handler
+# Add file handler (Json Handler)
 if LOG_TARGET in ("file", "both"):
     logger.add(
         LOG_FILE,

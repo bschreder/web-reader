@@ -9,6 +9,7 @@ from src.mcp_client import MCPClient
 from recorder_websocket import RecorderWebSocket
 
 
+@pytest.mark.timeout(300)
 class TestResearchWorkflow:
     """Test complete research workflows."""
 
@@ -21,11 +22,11 @@ class TestResearchWorkflow:
         test_question_simple,
     ):
         """Test executing a simple research task end-to-end."""
-        async with MCPClient(fastmcp_url) as client:
-            # Create recorder WebSocket for callbacks (captures events)
-            recorder = RecorderWebSocket()
-            callback = WebSocketCallbackHandler(recorder)
-
+        try:
+            async with MCPClient(fastmcp_url) as client:
+                # Create recorder WebSocket for callbacks (captures events)
+                recorder = RecorderWebSocket()
+                callback = WebSocketCallbackHandler(recorder)
             # Execute research task
             result = await execute_research_task(
                 question=test_question_simple,
@@ -43,6 +44,11 @@ class TestResearchWorkflow:
             # Check for expected fields
             assert "status" in result or "answer" in result or "output" in result
 
+            # Ensure the task did not finish with an error status
+            assert result.get("status") != "error", (
+                f"Research task returned error status: {result.get('error') or result}"
+            )
+
             # Ensure at least one websocket event was emitted
             assert len(recorder.messages) > 0, "No websocket events were recorded"
             # At minimum expect an agent lifecycle event such as thinking/tool_call/finish
@@ -54,6 +60,8 @@ class TestResearchWorkflow:
                 "agent:thought",
                 "agent:tool_result",
             }, f"Unexpected event types: {types}"
+        except Exception as e:
+            pytest.fail(f"Test failed with exception: {e}")
 
     @pytest.mark.asyncio
     @pytest.mark.e2e

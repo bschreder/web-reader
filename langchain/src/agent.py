@@ -51,6 +51,57 @@ Remember: Think step-by-step and explain your reasoning. When you have enough in
 """
 
 
+# Private: robust answer extraction across various LangChain/LLM result shapes
+def _extract_answer(res: Any) -> str:
+    """Return the best-effort text answer from a model/agent result.
+
+    Handles several common result shapes produced by different LangChain
+    wrappers and LLM integrations: dicts with `output`/`text` keys,
+    chat `messages` lists (objects with `.content` or dicts with `content`),
+    `choices`, or arbitrary objects.
+    """
+    if not res:
+        return "No answer generated"
+
+    # If result is dict-like, check common keys first
+    if isinstance(res, dict):
+        for key in ("output", "text", "answer", "result"):
+            if key in res and res[key]:
+                return str(res[key])
+
+        # Handle message-based responses (list of message objects or dicts)
+        msgs = res.get("messages") or res.get("message") or res.get("choices")
+        if msgs:
+            try:
+                if isinstance(msgs, dict):
+                    msgs = [msgs]
+                parts: list[str] = []
+                for m in msgs:
+                    # Prefer attribute-style content (e.g., AIMessage.content)
+                    content = getattr(m, "content", None)
+                    if content is not None:
+                        parts.append(str(content))
+                        continue
+                    # Support dict-style message objects
+                    if isinstance(m, dict) and "content" in m and m["content"]:
+                        parts.append(str(m["content"]))
+                        continue
+                    # Fallback to stringifying the item
+                    parts.append(str(m))
+                text = "\n".join([p for p in parts if p]).strip()
+                if text:
+                    return text
+            except Exception:
+                # Fall through to final fallback
+                pass
+
+    # Fallback to string conversion for other result shapes
+    try:
+        return str(res)
+    except Exception:
+        return "No answer generated"
+
+
 # ============================================================================
 # Agent Creation
 # ============================================================================
@@ -63,7 +114,7 @@ def create_research_agent(
     max_iterations: int = MAX_ITERATIONS,
     max_execution_time: int = MAX_EXECUTION_TIME,
     verbose: bool = AGENT_VERBOSE,
-) -> any:
+) -> Any:
     """
     Create a ReAct agent for web research.
 
@@ -173,9 +224,7 @@ async def execute_research_task(
 
         # Execute agent
         result = await agent_executor.ainvoke(agent_input)
-
-        # Extract answer
-        answer = result.get("output", "No answer generated")
+        answer = _extract_answer(result)
 
         # Gather artifacts
         collector = get_collector()

@@ -1,0 +1,27 @@
+# Ignore local Python virtual environments and other build artifacts
+.venv
+.venv/**
+venv
+venv/**
+# Bytecode and caches
+__pycache__
+*.py[cod]
+
+# Environment files
+.env
+.env.*
+
+# Packaging
+build
+dist
+*.egg-info
+
+# Git
+.git
+.gitignore
+
+# Editor/temp
+.vscode
+*.swp
+*.swo
+*.DS_Store

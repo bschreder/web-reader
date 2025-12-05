@@ -8,10 +8,14 @@ The system is built using a microservices architecture with 6 containerized comp
 
 1. Frontend (TanStack Start)
 2. Backend API (FastAPI)
-3. LangChain Orchestrator
-4. FastMCP Server
+3. LangChain Orchestrator (FastMCP _client_)
+4. FastMCP Server (MCP tools/resources/prompts over HTTP)
 5. Playwright Browser
 6. Ollama LLM
+
+The key split is between the **LangChain Orchestrator**, which uses FastMCP's
+Python client to invoke tools/resources/prompts, and the **FastMCP Server**,
+which exposes those browser automation capabilities as an HTTP MCP server.
 
 ## Multistage Dockerfile Pattern (Dev vs Prod)
 

@@ -1,6 +1,7 @@
 """Integration tests for FastMCP with live Playwright container."""
 
 from http import HTTPStatus
+
 import pytest
 
 from src.browser import create_context, get_browser

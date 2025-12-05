@@ -44,7 +44,7 @@ def fastmcp_url() -> str:
     """Get FastMCP service URL."""
     import os
 
-    # Use Docker network hostname for devcontainer access
+    # Use Docker network hostname for devcontainer/container access; override via env if needed.
     host = os.getenv("FASTMCP_HOST", "fastmcp")
-    port = os.getenv("FASTMCP_PORT", "3000")
+    port = os.getenv("FASTMCP_PORT", "3100")
     return f"http://{host}:{port}"

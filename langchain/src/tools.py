@@ -1,15 +1,19 @@
-"""
-LangChain tool wrappers for FastMCP tools.
-Wraps MCP browser automation tools as LangChain StructuredTools.
-"""
+"""LangChain tool wrappers for FastMCP tools, resources, and prompts.
 
+This module exposes MCP browser automation as LangChain ``StructuredTool``
+instances. Tools are invoked via :class:`~langchain.mcp_client.MCPClient`
+which is backed by FastMCP's official client implementation.
+
+In addition to raw tools, this layer can also call FastMCP resources and
+prompts using ``fastmcp.Client`` semantics where appropriate.
+"""
 
 from langchain_core.tools import StructuredTool
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from .mcp_client import MCPClient
 from .collector import get_collector
+from .mcp_client import MCPClient
 
 
 # ============================================================================
@@ -30,7 +34,11 @@ class NavigateToArgs(BaseModel):
 class GetPageContentArgs(BaseModel):
     """Arguments for get_page_content tool (no args needed)."""
 
-    pass
+    # Placeholder field allows future extension (e.g. mode="summary").
+    mode: str | None = Field(
+        default=None,
+        description="Optional extraction mode hint (currently unused).",
+    )
 
 
 class TakeScreenshotArgs(BaseModel):
@@ -88,7 +96,18 @@ async def get_page_content_wrapper(mcp_client: MCPClient) -> str:
     Returns:
         Human-readable content summary
     """
-    result = await mcp_client.call_tool("get_page_content", {})
+    # Prefer the richer FastMCP resource view when available, but fall back
+    # to the raw tool for compatibility with older servers.
+    try:
+        # ``current_page`` is the resource URI we register in fastmcp/server.py.
+        # We intentionally reach into the underlying FastMCP client here to
+        # take advantage of richer resource semantics.
+        if getattr(mcp_client, "_client", None) is not None:  # pragma: no cover - defensive
+            result = await mcp_client._client.get_resource("current_page")  # type: ignore[attr-defined]
+        else:
+            result = await mcp_client.call_tool("get_page_content", {})
+    except Exception:
+        result = await mcp_client.call_tool("get_page_content", {})
 
     if result.get("status") == "success":
         title = result.get("title", "Unknown")

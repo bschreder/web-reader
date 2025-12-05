@@ -1,18 +1,30 @@
-"""
-Pytest configuration and shared fixtures for backend tests.
-"""
+from __future__ import annotations
 
+import os
+import sys
 import asyncio
 from pathlib import Path
 from typing import AsyncGenerator
-import sys
 
+from dotenv import load_dotenv
 import pytest
 from httpx import AsyncClient
 
+
+# Load .env files early so modules that read env vars at import time see values
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+for candidate in (ROOT / ".env", ROOT / "backend" / ".env", HERE / ".env"):
+    load_dotenv(dotenv_path=str(candidate), override=False)
+
+# Safe fallbacks for devcontainer test runs
+os.environ.setdefault("OLLAMA_HOST", "ws-ollama")
+os.environ.setdefault("OLLAMA_PORT", "11434")
+os.environ.setdefault("FASTMCP_HOST", "fastmcp")
+os.environ.setdefault("FASTMCP_PORT", "3100")
+
 # Ensure the backend package root is on sys.path so `import src` works
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 
 
 @pytest.fixture(scope="session")

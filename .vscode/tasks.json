@@ -14,7 +14,7 @@
     {
       "label": "Start (Debug)",
       "type": "shell",
-      "command": "docker compose -f ${workspaceFolder}/docker/docker-compose.yml -f ${workspaceFolder}/docker/docker-compose.override.yml up -d --build",
+      "command": "docker compose -f ${workspaceFolder}/docker/docker-compose.yml -f ${workspaceFolder}/docker/docker-compose.dev.yml up -d --build",
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",

@@ -1,11 +1,11 @@
 """Tests for FastMCP tool implementations."""
 
-from base64 import b64decode
 import sys
+from base64 import b64decode
+from http import HTTPStatus
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
-from http import HTTPStatus
 
 import pytest
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
@@ -14,8 +14,8 @@ from pytest_mock import MockerFixture
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.tools import get_page_content, navigate_to, take_screenshot
 from src.config import MAX_TEXT_CHARS
+from src.tools import get_page_content, navigate_to, take_screenshot
 
 
 class TestNavigateTo:

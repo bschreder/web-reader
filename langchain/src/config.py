@@ -4,6 +4,7 @@ Loads environment variables and provides application settings.
 """
 
 import os
+from datetime import datetime
 from pathlib import Path
 
 # ============================================================================
@@ -21,7 +22,8 @@ FASTMCP_HOST = os.getenv("FASTMCP_HOST", "localhost")
 # Default FastMCP MCP server port is 3100 (compose default)
 FASTMCP_PORT = int(os.getenv("FASTMCP_PORT", "3100"))
 FASTMCP_HEALTH_PORT = int(os.getenv("FASTMCP_HEALTH_PORT", "3101"))
-FASTMCP_URL = f"http://{FASTMCP_HOST}:{FASTMCP_PORT}"
+# The FastMCP HTTP transport mounts under `/mcp`.
+FASTMCP_URL = os.getenv("FASTMCP_URL", f"http://{FASTMCP_HOST}:{FASTMCP_PORT}/mcp")
 
 # ============================================================================
 # Ollama Configuration
@@ -47,8 +49,12 @@ AGENT_VERBOSE = os.getenv("AGENT_VERBOSE", "true").lower() == "true"
 # ============================================================================
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "info").upper()
-LOG_TARGET = os.getenv("LOG_TARGET", "console").lower()
-LOG_FILE = os.getenv("LOG_FILE", "logs/langchain.log")
+# Default to logging to both console and file
+LOG_TARGET = os.getenv("LOG_TARGET", "both").lower()
+
+# Dynamic JSON log filename: logs/log-langchain-YYYYMMDD.json
+_date_str = datetime.now().strftime("%Y%m%d")
+LOG_FILE = os.getenv("LOG_FILE", f"logs/log-langchain-{_date_str}.json")
 
 # ============================================================================
 # Directory Configuration

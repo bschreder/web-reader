@@ -34,7 +34,7 @@
     "npm": true,
     "pip": true,
     "pip3": true,
-    "poetry": true,
+    "/^poetry.*/": true,
     "python": true,
     "python3": true,
     "ruff": true,

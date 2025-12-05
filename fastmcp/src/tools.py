@@ -1,6 +1,8 @@
-"""
-MCP tool implementations.
-Browser automation tools exposed via the Model Context Protocol.
+"""MCP tool, resource, and prompt implementations.
+
+This module defines the concrete browser automation tools exposed via the
+Model Context Protocol as well as higher-level resources and prompts that
+provide more structured access patterns for the LangChain orchestrator.
 """
 
 import base64
@@ -61,6 +63,33 @@ class ScreenshotArgs(BaseModel):
 
 def tool():
     """Identity decorator for tool registration."""
+
+    def deco(f):
+        return f
+
+    return deco
+
+
+def resource():
+    """Identity decorator for resource registration.
+
+    When running under the FastMCP framework, this decorator will be
+    replaced by :meth:`fastmcp.FastMCP.resource`. Keeping this identity
+    implementation allows unit tests to run without importing FastMCP.
+    """
+
+    def deco(f):
+        return f
+
+    return deco
+
+
+def prompt():
+    """Identity decorator for prompt registration.
+
+    When running under FastMCP, this will be swapped for
+    :meth:`fastmcp.FastMCP.prompt`.
+    """
 
     def deco(f):
         return f
@@ -291,3 +320,38 @@ async def take_screenshot(full_page: bool = False, task_id: str = "default") -> 
     except Exception as e:
         logger.error(f"Screenshot error: {e}")
         return {"status": "error", "error": str(e)}
+
+
+# =========================================================================
+# Higher-level Resources and Prompts
+# =========================================================================
+
+
+@resource()
+async def current_page_resource(task_id: str = "default") -> dict[str, Any]:
+    """MCP resource exposing the current page's structured content.
+
+    This is a thin wrapper around :func:`get_page_content` so that
+    orchestrators can use the FastMCP resource API (``get_resource``)
+    instead of always going through tools.
+    """
+
+    return await get_page_content(task_id=task_id)
+
+
+@prompt()
+async def summarize_current_page(task_id: str = "default") -> str:
+    """Prompt helper that returns a textual summary target for the LLM.
+
+    The LangChain layer can fetch this as a prompt and feed it directly to
+    the model, ensuring consistent summarisation behavior.
+    """
+
+    result = await get_page_content(task_id=task_id)
+    if result.get("status") != "success":  # pragma: no cover - thin wrapper
+        return f"Unable to summarise page: {result.get('error', 'unknown error')}"
+
+    title = result.get("title", "Untitled")
+    text = result.get("text", "")
+    return f"Page title: {title}\n\nContent:\n{text}"
+

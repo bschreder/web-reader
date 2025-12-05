@@ -184,15 +184,16 @@ Devcontainer (preferred):
 
 ```
 cd fastmcp
-pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
-pytest tests/integration -v
-pytest tests/e2e -v --maxfail=1
+poetry install --with dev
+poetry run pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
+poetry run pytest tests/integration -v
+poetry run pytest tests/e2e -v --maxfail=1
 ```
 
 Optional inside container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp poetry run pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
 ```
 
 ### Deliverables
@@ -281,15 +282,16 @@ Devcontainer:
 
 ```
 cd backend
-pytest tests/unit --cov=src --cov-branch --cov-report=term
-pytest tests/integration -v
-pytest tests/e2e -v
+poetry install --with test
+poetry run pytest tests/unit --cov=src --cov-branch --cov-report=term
+poetry run pytest tests/integration -v
+poetry run pytest tests/e2e -v
 ```
 
 Optional container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend pytest tests/unit
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend poetry run pytest tests/unit
 ```
 
 ### Deliverables
@@ -377,15 +379,16 @@ Devcontainer:
 
 ```
 cd langchain
-pytest tests/unit --cov=src --cov-branch --cov-report=term
-pytest tests/integration -v
-pytest tests/e2e -v
+poetry install --with test
+poetry run pytest tests/unit --cov=src --cov-branch --cov-report=term
+poetry run pytest tests/integration -v
+poetry run pytest tests/e2e -v
 ```
 
 Optional container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain pytest tests/unit
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain poetry run pytest tests/unit
 ```
 
 ### Deliverables
@@ -665,9 +668,9 @@ Each project job should:
 **Backend Tests:**
 
 - [ ] Start required infrastructure (Ollama, Playwright) via Docker Compose
-- [ ] Run unit tests (`pytest tests/unit --cov=src --cov-branch`)
-- [ ] Run integration tests (`pytest tests/integration`)
-- [ ] Run E2E tests (`pytest tests/e2e`)
+- [ ] Run unit tests (`poetry run pytest tests/unit --cov=src --cov-branch`)
+- [ ] Run integration tests (`poetry run pytest tests/integration`)
+- [ ] Run E2E tests (`poetry run pytest tests/e2e`)
 - [ ] Enforce >80% coverage threshold
 - [ ] Upload coverage artifact
 - [ ] Cleanup infrastructure containers

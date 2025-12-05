@@ -19,7 +19,13 @@ from loguru import logger
 from src.browser import cleanup_browser, cleanup_task_context
 from src.config import configure_logging
 from src.filtering import load_allowed_domains, load_disallowed_domains
-from src.tools import get_page_content, navigate_to, take_screenshot
+from src.tools import (
+    current_page_resource,
+    get_page_content,
+    navigate_to,
+    summarize_current_page,
+    take_screenshot,
+)
 
 # ============================================================================
 # Configuration
@@ -47,8 +53,42 @@ class _HealthHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):  # noqa: N802
+        # Lightweight health and discovery endpoints; kept minimal to avoid
+        # introducing extra web frameworks in this container.
         if self.path in ("/health", "/live", "/ready"):
             return self._json("ok", 200)
+
+        if self.path == "/tools/list":
+            # This endpoint is intentionally simple: it only exposes a static
+            # view of the tools we register in main() so that orchestrators
+            # (like the LangChain service) can introspect available tools
+            # without speaking the full MCP protocol.
+            tools = [
+                {
+                    "name": "navigate_to",
+                    "description": "Navigate to a URL and wait for page load.",
+                },
+                {
+                    "name": "get_page_content",
+                    "description": "Extract text content and links from the current page.",
+                },
+                {
+                    "name": "take_screenshot",
+                    "description": "Capture a screenshot of the current page.",
+                },
+                {
+                    "name": "cleanup_task_context",
+                    "description": "Release Playwright browser context for a given task.",
+                },
+            ]
+            body = json.dumps({"status": "ok", "tools": tools}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
         return self._json("not-found", 404)
 
     def log_message(self, format, *args):  # noqa: A003 - silence default logging
@@ -125,9 +165,11 @@ if __name__ == "__main__":
         mcp.tool()(navigate_to)
         mcp.tool()(get_page_content)
         mcp.tool()(take_screenshot)
-
-        # Register cleanup tool (to be called after task completion)
         mcp.tool()(cleanup_task_context)
+
+        # Register higher-level resources and prompts for richer semantics.
+        mcp.resource("current_page/{task_id}")(current_page_resource)
+        mcp.prompt("summarize_current_page/{task_id}")(summarize_current_page)
 
         # Run as HTTP server (not stdio)
         port = int(os.getenv("MCP_SERVER_PORT", "3000"))

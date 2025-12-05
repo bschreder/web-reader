@@ -4,6 +4,8 @@ Loads and validates environment variables.
 """
 
 import os
+import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Final
 
@@ -31,8 +33,10 @@ MAX_LINKS: Final[int] = int(os.getenv("MAX_LINKS", "50"))
 
 # Logging
 LOG_LEVEL: Final[str] = os.getenv("LOG_LEVEL", "info").upper()
-LOG_TARGET: Final[str] = os.getenv("LOG_TARGET", "console")
-LOG_FILE: Final[str] = os.getenv("LOG_FILE", "logs/fastmcp.log")
+LOG_TARGET: Final[str] = os.getenv("LOG_TARGET", "both")
+
+_date_str: Final[str] = datetime.now().strftime("%Y%m%d")
+LOG_FILE: Final[str] = os.getenv("LOG_FILE", f"logs/log-fastmcp-{_date_str}.json")
 
 # Robots.txt (future enhancement)
 RESPECT_ROBOTS_TXT: Final[bool] = os.getenv("RESPECT_ROBOTS_TXT", "true").lower() == "true"
@@ -67,29 +71,27 @@ HTTP_STATUS_MESSAGES: Final[dict[int, str]] = {
 
 
 def configure_logging():  # pragma: no cover
-    """Configure Loguru logger based on environment settings.
+    """Configure Loguru to log to console and JSON file."""
+    # Remove default logger
+    logger.remove()
 
-    Note: Logging setup is excluded from coverage as behavior is environment-driven.
-    """
-    logger.remove()  # Remove default handler
-
+    # Add console handler (human-friendly)
     if LOG_TARGET in ("console", "both"):
         logger.add(
-            lambda msg: print(msg, end=""),
-            colorize=True,
+            sys.stderr,
             level=LOG_LEVEL,
-            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
+            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            colorize=True,
         )
 
+    # Add file handler (Json Handler)
     if LOG_TARGET in ("file", "both"):
-        Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
         logger.add(
             LOG_FILE,
-            rotation="10 MB",
-            retention="14 days",
-            compression="zip",
             level=LOG_LEVEL,
-            serialize=True,
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}",
+            rotation="100 MB",
+            retention="7 days",
         )
 
     logger.info(f"FastMCP server configured (log level: {LOG_LEVEL}, target: {LOG_TARGET})")

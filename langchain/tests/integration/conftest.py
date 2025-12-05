@@ -24,7 +24,10 @@ def fastmcp_url() -> str:
 
     Defaults align with docker-compose: MCP on 3100, container name 'web-reader-fastmcp'.
     """
-    host = os.getenv("FASTMCP_HOST", "web-reader-fastmcp")
+    # Use the short container hostname by default so tests run inside the
+    # devcontainer can resolve the service as `fastmcp` on the Docker
+    # bridge network.
+    host = os.getenv("FASTMCP_HOST", "fastmcp")
     port = os.getenv("FASTMCP_PORT", "3100")
     return f"http://{host}:{port}"
 
