@@ -1,47 +1,97 @@
-import tseslint from '@typescript-eslint/eslint-plugin'
-import tsparser from '@typescript-eslint/parser'
-import react from 'eslint-plugin-react'
-import reactHooks from 'eslint-plugin-react-hooks'
-import jsxA11y from 'eslint-plugin-jsx-a11y'
+// @ts-check
+import react from 'eslint-plugin-react';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import jsdoc from 'eslint-plugin-jsdoc';
+import tseslint from 'typescript-eslint';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    ignores: ['dist', 'coverage', 'node_modules', '*.config.{js,ts}'],
+  },
+  ...tseslint.configs.recommended,
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
-      parser: tsparser,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      parser: tseslint.parser,
       parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
         ecmaFeatures: {
           jsx: true,
         },
       },
     },
     plugins: {
-      '@typescript-eslint': tseslint,
-      'react': react,
+      '@typescript-eslint': tseslint.plugin,
+      jsdoc,
+      react,
       'react-hooks': reactHooks,
       'jsx-a11y': jsxA11y,
     },
-    rules: {
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'off',
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-      'jsx-a11y/alt-text': 'warn',
-      'jsx-a11y/anchor-is-valid': 'warn',
-      'jsx-a11y/click-events-have-key-events': 'warn',
-      'jsx-a11y/no-static-element-interactions': 'warn',
-    },
     settings: {
-      react: {
-        version: 'detect',
-      },
+      react: { version: 'detect' },
+    },
+    rules: {
+      // Recommended
+      ...react.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      ...jsxA11y.configs.recommended.rules,
+      ...jsdoc.configs['flat/recommended-typescript'].rules,
+
+      // JSDoc
+      'jsdoc/require-jsdoc': [
+        'warn',
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: false,
+            FunctionExpression: false,
+          },
+        },
+      ],
+      'jsdoc/require-param': 'error',
+      'jsdoc/require-returns': 'error',
+      'jsdoc/require-param-description': 'warn',
+      'jsdoc/require-returns-description': 'warn',
+      'jsdoc/require-returns-check': 'warn',
+      'jsdoc/require-param-type': 'error',
+      'jsdoc/require-returns-type': 'error',
+      'jsdoc/require-property-type': 'error',
+      'jsdoc/no-types': 'off',
+
+      // TypeScript
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/explicit-function-return-type': 'warn',
+      '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+
+      // React
+      'react/react-in-jsx-scope': 'off',
+      'react/jsx-uses-react': 'off',
+
+      // Custom and Overrides
+      semi: ['error', 'always'],
     },
   },
   {
-    ignores: ['node_modules', 'dist', '.output', 'coverage', 'src/routeTree.gen.ts'],
+    files: ['**/tests/**/*.{ts,tsx}'],
+    rules: {
+      // Recommended
+      ...react.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+
+      // TypeScript
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': 'off',
+
+      // Custom and Overrides
+      semi: ['error', 'always'],
+    },
   },
-]
+];

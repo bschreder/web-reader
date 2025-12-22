@@ -1,7 +1,7 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import tsConfigPaths from 'vite-tsconfig-paths'
-import { playwright } from '@vitest/browser-playwright'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import tsConfigPaths from 'vite-tsconfig-paths';
+import { playwright } from '@vitest/browser-playwright';
 
 // Two test projects: "unit" (node) and "browser" (playwright chromium).
 export default defineConfig({
@@ -17,13 +17,22 @@ export default defineConfig({
     reporters: ['default', 'hanging-process'],
     coverage: {
       provider: 'v8',
+      thresholds: {
+        branches: 0.8,
+        functions: 0.8,
+        lines: 0.8,
+        statements: 0.8,
+      },
       reporter: ['text', 'json', 'html'],
+      reportsDirectory: 'coverage',
+      include: ['src/**'],
       exclude: [
         'node_modules/',
         'dist/',
         'tests/',
         '**/*.config.{js,ts}',
         '**/routeTree.gen.ts',
+        'src/entries/**',
       ],
     },
     projects: [
@@ -52,4 +61,4 @@ export default defineConfig({
       },
     ],
   },
-})
+});

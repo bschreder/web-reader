@@ -413,11 +413,15 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 
 #### TanStack Start Setup
 
-- [ ] Initialize TanStack Start project with TypeScript
+- [ ] Initialize TanStack Start SPA/SSR project with TypeScript using [Build from scratch](https://tanstack.com/start/latest/docs/framework/react/build-from-scratch)
 - [ ] Install dependencies: `@tanstack/start`, `@tanstack/react-router`, `@tanstack/react-query`
+- [ ] Install devtools: `@tanstack/react-devtools`, `@tanstack/react-router-devtools`, `@tanstack/react-query-devtools`, `@tanstack/devtools-vite`
 - [ ] Configure build and development scripts
-- [ ] Set up Tailwind CSS or preferred styling solution
+- [ ] Set up Tailwind v4 CSS or preferred styling solution
 - [ ] Configure logging via Pino with Pretty in dev and file output when enabled in `.env`
+- [ ] Use ESLint v9 with flat configuration
+- [ ] Use the latest releases of all packages
+- [ ] Verify that all files pass ESLint and Vitest with code coverage > 80%
 
 #### Core Components
 

@@ -1,27 +1,20 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { lazy, Suspense } from 'react'
-import { createTask } from '~/lib/api'
-import type { TaskCreate } from '~/lib/types'
-import { Spinner } from '~/components/ui'
+import { createFileRoute } from '@tanstack/react-router';
+import TaskForm from '@components/TaskForm';
+import type { JSX } from 'react';
 
-// Lazy load TaskForm component
-const TaskForm = lazy(() => import('~/components/TaskForm').then(m => ({ default: m.TaskForm })))
-
-export const Route = createFileRoute('/')({
-  component: Home,
-})
-
-function Home() {
-  const router = useRouter()
-  const handleSubmit = async (data: TaskCreate) => {
-    const task = await createTask(data)
-    router.navigate({ to: `/tasks/${task.task_id}` })
-  }
+/**
+ * Home page component.
+ * @returns {JSX.Element} The home page
+ */
+function HomePage(): JSX.Element {
   return (
     <div className="space-y-6">
-      <Suspense fallback={<Spinner size="lg" centered />}>
-        <TaskForm onSubmit={handleSubmit} />
-      </Suspense>
+      <h1 className="text-2xl font-bold">Submit Research Task</h1>
+      <TaskForm />
     </div>
-  )
+  );
 }
+
+export const Route = createFileRoute('/')({
+  component: HomePage,
+});

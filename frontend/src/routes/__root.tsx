@@ -1,88 +1,57 @@
-/// <reference types="vite/client" />
-import type { ReactNode } from 'react'
-import { Outlet, HeadContent, Scripts, createRootRoute, Link } from '@tanstack/react-router'
-import { lazy, Suspense } from 'react'
+import { createRootRoute, Outlet, Link } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TanStackDevtools } from '@tanstack/react-devtools';
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+import { JSX } from 'react';
 
-// Lazy load DevTools only in development
-const TanStackRouterDevtools =
-  import.meta.env.MODE === 'production'
-    ? () => null
-    : lazy(() =>
-        import('@tanstack/react-router-devtools').then((res) => ({
-          default: res.TanStackRouterDevtools,
-        })),
-      )
+const qc = new QueryClient();
 
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Web Reader' },
-    ],
-  }),
-  notFoundComponent: () => (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">404 - Not Found</h1>
-      <p className="text-gray-600 mb-8">The page you're looking for doesn't exist.</p>
-      <Link to="/" className="btn-primary">Go Home</Link>
-    </div>
-  ),
-  component: RootComponent,
-})
-
-function RootComponent() {
+/**
+ * Root layout component for the entire application.
+ * @returns {JSX.Element} The root layout with header, main, and devtools
+ */
+function RootLayout(): JSX.Element {
+  const showDevtools = import.meta.env.DEV;
   return (
-    <RootDocument>
-      <Layout>
-        <Outlet />
-      </Layout>
-    </RootDocument>
-  )
-}
-
-function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body className="min-h-screen bg-gray-50 text-gray-900">
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  )
-}
-
-function Layout({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">🔍 Web Reader</h1>
-            <p className="text-sm text-gray-500">AI-powered web research assistant</p>
-          </div>
-          <nav className="flex space-x-4 text-sm">
-            <Link to="/" className="text-gray-600 hover:text-gray-900">
-              New Task
+    <QueryClientProvider client={qc}>
+      <div className="min-h-screen bg-neutral-950 text-neutral-100">
+        <header className="border-b border-neutral-800">
+          <nav className="mx-auto max-w-5xl px-4 py-3 flex gap-4">
+            <Link to="/" className="hover:underline">
+              Home
             </Link>
-            <Link to="/history" className="text-gray-600 hover:text-gray-900">
+            <Link to="/history" className="hover:underline">
               History
             </Link>
           </nav>
-        </div>
-      </header>
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
-      <footer className="bg-white border-t border-gray-200 text-center text-xs py-4 text-gray-500">
-        Web Reader v0.1.0 • TanStack Start & LangChain
-      </footer>
-      <Suspense fallback={null}>
-        <TanStackRouterDevtools />
-      </Suspense>
-    </div>
-  )
+        </header>
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <Outlet />
+        </main>
+      </div>
+      {showDevtools && (
+        <TanStackDevtools
+          plugins={[
+            {
+              name: 'TanStack Query',
+              render: <ReactQueryDevtoolsPanel />,
+              defaultOpen: false,
+            },
+            {
+              name: 'TanStack Router',
+              render: <TanStackRouterDevtoolsPanel />,
+              defaultOpen: false,
+            },
+          ]}
+        />
+      )}
+    </QueryClientProvider>
+  );
 }
+
+export const Route = createRootRoute({
+	component: RootLayout,
+});
+
+export default RootLayout;

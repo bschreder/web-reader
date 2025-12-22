@@ -4,6 +4,7 @@
     "ms-python.vscode-pylance",
     "charliermarsh.ruff",
     "vitest.explorer",
+    "ms-playwright.playwright",
     "ms-azuretools.vscode-docker",
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",

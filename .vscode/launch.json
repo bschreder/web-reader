@@ -29,6 +29,21 @@
       "port": 9229,
       "restart": true,
       "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Debug Frontend (Devcontainer)",
+      "type": "node",
+      "request": "attach",
+      "address": "localhost",
+      "port": 9229,
+      "localRoot": "${workspaceFolder}/frontend",
+      "remoteRoot": "/workspaces/web-reader/frontend",
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/frontend/**",
+        "!**/node_modules/**"
+      ]
     }
   ]
 }

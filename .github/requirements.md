@@ -335,9 +335,9 @@ The system follows a layered architecture with clear separation of concerns:
 └──────┬──────────────────────┘
        │ Playwright API
        │
-┌──────▼────────────────────────────────────────────────────┐
+┌──────▼─────────────────────────────────────────────────────┐
 │              Playwright Container                          │
-│         mcr.microsoft.com/playwright:v1.56.1-noble        │
+│         mcr.microsoft.com/playwright:v1.56.1-noble         │
 │                                                            │
 │  - Chromium/Firefox/WebKit browsers                        │
 │  - Browser contexts and sessions                           │

@@ -16,4 +16,9 @@ This document is for developer notes and SHOULD NOT be used by Copilot, AI or LL
 ## Tech Debit
 
 - otel: logs, metrics, traces (typescript, python)
+
   1. prometheus and grafana; elastic stack; jaeger; zipkin
+
+- frontend e2e:
+  1.  support retries
+  2.  add html reporter

@@ -48,6 +48,8 @@
   // JavaScript/TypeScript testing (Vitest)
   "vitest.enable": true,
   "vitest.commandLine": "npm test --",
+  "playwright.configPath": "frontend/playwright.config.ts",
+
   
   // Test explorer UI settings
   "testing.automaticallyOpenPeekView": "failureInVisibleDocument",

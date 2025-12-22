@@ -24,6 +24,7 @@
         "ms-python.vscode-pylance",
         "charliermarsh.ruff",
         "vitest.explorer",
+        "ms-playwright.playwright",
         "ms-azuretools.vscode-docker",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
@@ -35,9 +36,10 @@
   },
   "postCreateCommand": "/workspaces/web-reader/.devcontainer/postCreateCommand.sh",
   "hostRequirements": {
-    // "cpus": 2,
-    // "memory": "4gb"
-    "cpus": 4,
-    "memory": "8gb"
+    "cpus": 2,
+    "memory": "4gb",
+    // "cpus": 4,
+    // "memory": "8gb"
+    // "gpu": "optional"
   }
 }

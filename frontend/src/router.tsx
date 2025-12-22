@@ -1,14 +1,14 @@
-import { createRouter } from '@tanstack/react-router'
-import { routeTree } from './routeTree.gen'
+import { createRouter } from '@tanstack/react-router';
+import { routeTree } from '@src/routeTree.gen';
 
-export function getRouter() {
-  return createRouter({
-    routeTree,
-    scrollRestoration: true,
-  })
+/**
+ * Create a new router instance (required by TanStack Start).
+ * @returns {ReturnType<typeof createRouter>} The configured router instance
+ */
+export function getRouter(): ReturnType<typeof createRouter> {
+  return createRouter({ routeTree });
 }
 
-// Augment TanStack Router's type registry
 declare module '@tanstack/react-router' {
   interface Register {
     router: ReturnType<typeof getRouter>

@@ -1,133 +1,49 @@
-import type { Task, TaskCreate, HealthStatus } from './types'
+import type { CreateTaskRequest, TaskDetail, TaskSummary } from '@src/types/task';
 
-/**
- * Base URL for backend API requests.
- * Falls back to http://localhost:8000 when VITE_API_URL is not provided.
- * @remarks Controlled via environment variable VITE_API_URL.
- */
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-
-/**
- * Error type for API failures with optional HTTP status and details.
- * @public
- */
-export class APIError extends Error {
-  /**
-   * Create a new APIError.
-   * @param message - Human readable description.
-   * @param status - Optional HTTP status code.
-   * @param details - Parsed server error payload or low-level error object.
-   */
-  constructor(
-    message: string,
-    public status?: number,
-    public details?: unknown,
-  ) {
-    super(message)
-    this.name = 'APIError'
-  }
-}
-
-/**
- * Perform a JSON API request against the backend.
- *
- * @template T Response payload type
- * @param path - Request path beginning with '/'
- * @param options - Fetch options (method, headers, body)
- * @returns Parsed JSON response
- * @throws {@link APIError} When network fails or response is non-2xx
- */
-async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${path}`
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new APIError(
-        (errorData as { detail?: string }).detail || `HTTP ${response.status}: ${response.statusText}`,
-        response.status,
-        errorData,
-      )
-    }
-    return response.json()
-  } catch (error) {
-    if (error instanceof APIError) throw error
-    throw new APIError(error instanceof Error ? error.message : 'Network error', undefined, error)
-  }
-}
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 /**
  * Create a new research task.
- * @param data - Task creation payload
- * @returns Newly created {@link Task}
+ * @param {CreateTaskRequest} req - The task creation request
+ * @returns {Promise<{id: string}>} A promise resolving to the new task ID
  */
-export async function createTask(data: TaskCreate): Promise<Task> {
-  return apiRequest<Task>('/api/tasks', { method: 'POST', body: JSON.stringify(data) })
-}
-
-/**
- * Retrieve a task by id.
- * @param taskId - Task identifier
- * @returns The {@link Task}
- */
-export async function getTask(taskId: string): Promise<Task> {
-  return apiRequest<Task>(`/api/tasks/${taskId}`)
-}
-
-/**
- * Cancel an existing task.
- * @param taskId - Task identifier
- * @param reason - Optional human-friendly reason
- * @returns Confirmation message
- */
-export async function cancelTask(taskId: string, reason?: string): Promise<{ message: string }> {
-  return apiRequest(`/api/tasks/${taskId}/cancel`, {
+export async function createTask(req: CreateTaskRequest): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/api/tasks`, {
     method: 'POST',
-    body: JSON.stringify({ reason: reason || 'Cancelled by user' }),
-  })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`Failed to create task: ${res.status}`);
+  return res.json();
 }
 
 /**
- * Permanently delete a task and its artifacts.
- * @param taskId - Task identifier
- * @returns Confirmation message
+ * Retrieve task details by ID.
+ * @param {string} id - The task ID
+ * @returns {Promise<TaskDetail>} A promise resolving to the task details
  */
-export async function deleteTask(taskId: string): Promise<{ message: string }> {
-  return apiRequest(`/api/tasks/${taskId}`, { method: 'DELETE' })
+export async function getTask(id: string): Promise<TaskDetail> {
+  const res = await fetch(`${API_URL}/api/tasks/${id}`);
+  if (!res.ok) throw new Error(`Failed to get task: ${res.status}`);
+  return res.json();
 }
 
 /**
- * List tasks with optional status filter.
- * @param status - Optional status to filter by
- * @returns Object containing tasks and total count
+ * Fetch all tasks.
+ * @returns {Promise<TaskSummary[]>} A promise resolving to an array of task summaries
  */
-export async function listTasks(status?: string): Promise<{ tasks: Task[]; total: number }> {
-  const params = new URLSearchParams()
-  if (status) params.set('status', status)
-  return apiRequest(`/api/tasks?${params.toString()}`)
+export async function listTasks(): Promise<TaskSummary[]> {
+  const res = await fetch(`${API_URL}/api/history`);
+  if (!res.ok) throw new Error(`Failed to list tasks: ${res.status}`);
+  return res.json();
 }
 
 /**
- * Retrieve backend health status.
- * @returns {@link HealthStatus}
+ * Cancel a task by ID.
+ * @param {string} id - The task ID to cancel
+ * @returns {Promise<void>} A promise that resolves when the task is cancelled
  */
-export async function getHealth(): Promise<HealthStatus> {
-  return apiRequest<HealthStatus>('/health')
-}
-
-/**
- * Build a direct screenshot URL for a task.
- * @param taskId - Task identifier
- * @param index - Screenshot index
- * @returns Absolute URL to screenshot resource
- */
-export function getScreenshotUrl(taskId: string, index: number): string {
-  return `${API_BASE_URL}/api/tasks/${taskId}/screenshots/${index}`
+export async function cancelTask(id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/tasks/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`Failed to cancel task: ${res.status}`);
 }

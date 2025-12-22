@@ -63,6 +63,20 @@ Use `.env.example` as the source of truth. Common keys you’ll reference most:
 - Backend API and WebSocket events: `backend/README.md`
 - Frontend HMR and structure: `frontend/README.md`
 
-—
+## Technology Links
+- LangChain: https://docs.langchain.com/oss/python/langchain/overview
+- FastMCP: https://gofastmcp.com/getting-started/welcome
+- FastAPI: https://fastapi.tiangolo.com
 
-Document: Copilot-focused quick guidance. For deep dives, follow the links above.
+- Tanstack Start: https://tanstack.com/start/latest/docs/framework/react/overview
+- Tanstack Router: https://tanstack.com/router/latest/docs/framework/react/overview
+- Tanstack Query: https://tanstack.com/query/latest/docs/framework/react/overview
+- Tanstack Devtools: https://tanstack.com/devtools/latest/docs
+- React: https://react.dev/reference/react
+
+- Ollama: https://docs.ollama.com/
+- Playwright: https://playwright.dev/docs/intro
+
+- Vite: https://vite.dev/guide/
+- Vitest: https://vitest.dev/guide/
+
