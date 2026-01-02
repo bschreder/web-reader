@@ -1,10 +1,10 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { createRoot } from 'react-dom/client';
+import { cleanup, render } from 'vitest-browser-react';
 import TaskHistory from '../../../src/components/TaskHistory';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-vi.mock('../../../src/lib/api', () => ({
+vi.mock('@lib/api', () => ({
   listTasks: async (): Promise<Record<string, unknown>[]> => [
     { id: '1', question: 'Q1', status: 'completed', createdAt: new Date().toISOString() },
   ],
@@ -12,21 +12,14 @@ vi.mock('../../../src/lib/api', () => ({
 
 describe('TaskHistory (browser)', () => {
   it('renders a table with tasks', async () => {
-    const el = document.createElement('div');
-    document.body.appendChild(el);
-    const root = createRoot(el);
     const qc = new QueryClient();
-    root.render(
+    const screen = await render(
       <QueryClientProvider client={qc}>
         <TaskHistory />
       </QueryClientProvider>
     );
 
-    // wait a tick for promises
-    await Promise.resolve();
-
-    expect(el.textContent).toContain('Q1');
-    root.unmount();
-    el.remove();
+    await expect.element(screen.getByText('Q1')).toBeVisible();
+    await cleanup();
   });
 });

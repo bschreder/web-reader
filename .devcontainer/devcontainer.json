@@ -15,7 +15,12 @@
   "mounts": [
     "source=${localWorkspaceFolder}/.env,target=/workspaces/web-reader/.env,type=bind,consistency=cached",
     "source=${localWorkspaceFolder}/logs,target=/workspaces/web-reader/logs,type=bind,consistency=cached",
-    "source=${localWorkspaceFolder}/data,target=/workspaces/web-reader/data,type=bind,consistency=cached"
+    "source=${localWorkspaceFolder}/data,target=/workspaces/web-reader/data,type=bind,consistency=cached",
+    // Add these for better I/O:
+    // "source=node_modules,target=/workspaces/web-reader/frontend/node_modules,type=volume",
+    // "source=backend-venv,target=/workspaces/web-reader/backend/.venv,type=volume",
+    // "source=fastmcp-venv,target=/workspaces/web-reader/fastmcp/.venv,type=volume",
+    // "source=langchain-venv,target=/workspaces/web-reader/langchain/.venv,type=volume"
   ],
   "customizations": {
     "vscode": {
@@ -36,10 +41,10 @@
   },
   "postCreateCommand": "/workspaces/web-reader/.devcontainer/postCreateCommand.sh",
   "hostRequirements": {
-    "cpus": 2,
-    "memory": "4gb",
-    // "cpus": 4,
-    // "memory": "8gb"
+    // "cpus": 2,
+    // "memory": "4gb",
+    "cpus": 4,
+    "memory": "8gb"
     // "gpu": "optional"
   }
 }

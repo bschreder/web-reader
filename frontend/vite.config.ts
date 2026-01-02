@@ -1,20 +1,29 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import tsConfigPaths from 'vite-tsconfig-paths';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import { devtools } from '@tanstack/devtools-vite';
 import tailwindcss from '@tailwindcss/vite';
 import viteReact from '@vitejs/plugin-react';
+import path from 'path';
 
 const isDev = process.env.NODE_ENV === 'development';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Load env from workspace root (parent directory)
+  const env = loadEnv(mode, path.resolve(__dirname, '..'), '');
+  
+  return {
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || 'http://localhost:8000'),
+    'import.meta.env.VITE_WS_URL': JSON.stringify(env.VITE_WS_URL || 'ws://localhost:8000'),
+  },
   plugins: [
     isDev && devtools(),
     tsConfigPaths(),
     tanstackStart(),
-    tailwindcss(),
     viteReact(), // must come after tanstackStart
-  ].filter(Boolean),
+    tailwindcss(),
+    ].filter(Boolean),
   build: {
     chunkSizeWarningLimit: 700,
     rollupOptions: {
@@ -33,11 +42,14 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     port: 3000,
     strictPort: true,
   },
   preview: {
+    host: '0.0.0.0',
     port: 3000,
     strictPort: true,
   },
+  };
 });

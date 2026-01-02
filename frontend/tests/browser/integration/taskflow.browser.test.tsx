@@ -1,9 +1,8 @@
-import React from 'react';
+import React, {JSX} from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { createRoot } from 'react-dom/client';
+import { cleanup, render } from 'vitest-browser-react';
 import TaskForm from '@components/TaskForm';
-import RootLayout from '@src/routes/__root';
-import { RouterProvider, createRouter, createRootRoute, createRoute } from '@tanstack/react-router';
+import { RouterProvider, createRouter, createRootRoute, createMemoryHistory } from '@tanstack/react-router';
 
 // Mock createTask to simulate navigation
 vi.mock('@lib/api', (): Record<string, unknown> => ({
@@ -13,35 +12,22 @@ vi.mock('@lib/api', (): Record<string, unknown> => ({
 // Mock navigate by spying on window.history
 /**
  * Mount the application with router.
- * @param {HTMLElement} el - The DOM element to mount into
- * @returns {ReturnType<typeof createRoot>} The React root instance
+ * @returns {JSX.Element} The React component
  */
-function mount(el: HTMLElement): ReturnType<typeof createRoot> {
-  const rootRoute = createRootRoute({ component: RootLayout });
-  const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: TaskForm });
-  const routeTree = rootRoute.addChildren([indexRoute]);
-  const router = createRouter({ routeTree });
-  const root = createRoot(el);
-  root.render(<RouterProvider router={router} />);
-  return root;
+function App(): JSX.Element {
+  const rootRoute = createRootRoute({ component: TaskForm });
+  const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ['/'] }) });
+  return <RouterProvider router={router} />;
 }
 
 describe('Task submission flow (browser)', () => {
   it('submits and renders form', async () => {
-    const el = document.createElement('div');
-    document.body.appendChild(el);
-    const root = mount(el);
+    const screen = await render(<App />);
 
-    const textarea = el.querySelector('textarea') as HTMLTextAreaElement;
-    const button = el.querySelector('button') as HTMLButtonElement;
+    await screen.getByRole('textbox', { name: 'Question' }).fill('What is TanStack Start?');
+    await screen.getByRole('button', { name: /Submit Question/ }).click();
 
-    textarea.value = 'What is TanStack Start?';
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-
-    button.click();
-
-    expect(textarea.value.length).toBeGreaterThan(0);
-    root.unmount();
-    el.remove();
+    await expect.element(screen.getByRole('textbox', { name: 'Question' })).toHaveValue('What is TanStack Start?');
+    await cleanup();
   });
 });

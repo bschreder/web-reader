@@ -8,7 +8,18 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional, Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
+# ==================================================================
+# Utilities
+# ==================================================================
+
+
+def to_camel(string: str) -> str:
+    """Convert snake_case to camelCase."""
+    components = string.split("_")
+    return components[0] + "".join(x.title() for x in components[1:])
 
 
 # ==================================================================
@@ -46,13 +57,38 @@ class EventType(str, Enum):
 class TaskCreate(BaseModel):
     """Request model for creating a new task."""
 
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     question: str = Field(
         ..., min_length=1, max_length=1000, description="Research question"
     )
-    seed_url: Annotated[Optional[str], Field(None, description="Optional starting URL")] = None
+    seed_url: Annotated[
+        Optional[str], Field(None, description="Optional starting URL")
+    ] = None
     max_depth: int = Field(3, ge=1, le=5, description="Maximum link depth to follow")
     max_pages: int = Field(20, ge=1, le=50, description="Maximum pages to visit")
     time_budget: int = Field(120, ge=30, le=600, description="Time budget in seconds")
+
+    # UC-01: Web Search parameters
+    search_engine: str = Field(
+        "duckduckgo",
+        description="Search engine to use: duckduckgo, bing, google, or custom",
+        pattern="^(duckduckgo|bing|google|custom)$",
+    )
+    max_results: int = Field(
+        10, ge=1, le=50, description="Maximum search results to examine"
+    )
+    safe_mode: bool = Field(
+        True, description="Filter adult/unsafe content in search results"
+    )
+
+    # UC-02: Link following parameters
+    same_domain_only: bool = Field(
+        False, description="Only follow links within the same domain as seed URL"
+    )
+    allow_external_links: bool = Field(
+        True, description="Allow following external links from pages"
+    )
 
 
 class TaskCancel(BaseModel):
@@ -71,6 +107,8 @@ class TaskCancel(BaseModel):
 class Citation(BaseModel):
     """Source citation."""
 
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     url: str
     title: str
     excerpt: Optional[str] = None
@@ -78,6 +116,8 @@ class Citation(BaseModel):
 
 class TaskResponse(BaseModel):
     """Response model for task status and results."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     task_id: str
     status: TaskStatus
@@ -97,6 +137,8 @@ class TaskResponse(BaseModel):
 class TaskListResponse(BaseModel):
     """Response model for listing tasks."""
 
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     tasks: list[TaskResponse]
     total: int
     offset: int
@@ -105,6 +147,8 @@ class TaskListResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     status: str = "healthy"
     version: str = "0.1.0"
@@ -116,6 +160,8 @@ class HealthResponse(BaseModel):
 class ErrorResponse(BaseModel):
     """Error response model."""
 
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     status: str = "error"
     error: str
     error_code: Optional[str] = None
@@ -124,6 +170,8 @@ class ErrorResponse(BaseModel):
 
 class WebSocketEvent(BaseModel):
     """Base model for WebSocket events."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     type: EventType
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

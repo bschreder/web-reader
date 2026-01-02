@@ -1,18 +1,13 @@
-import './tailwind-setup';
-import '@styles/tailwind.css';
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import {  RouterProvider } from '@tanstack/react-router';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { getRouter } from '@src/router';
-import { createQueryClient } from '@lib/query-client';
+import { StrictMode } from 'react';
+import { hydrateRoot } from 'react-dom/client';
+import { StartClient } from '@tanstack/react-start/client';
+import { ClientErrorBoundary } from '@components/ErrorBoundary';
 
-const router = getRouter();
-const queryClient = createQueryClient();
-
-const el = document.getElementById('app')!;
-createRoot(el).render(
-  <QueryClientProvider client={queryClient}>
-    <RouterProvider router={router} />
-  </QueryClientProvider>
+hydrateRoot(
+  document,
+  <StrictMode>
+    <ClientErrorBoundary>
+      <StartClient />
+    </ClientErrorBoundary>
+  </StrictMode>
 );

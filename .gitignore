@@ -54,6 +54,7 @@ venv.bak/
 
 # Ruff
 .ruff-cache/
+.ruff_cache/
 
 # Unit test / coverage
 .pytest_cache/

@@ -39,25 +39,30 @@ class WebSocketCallbackHandler(AsyncCallbackHandler):
         self.start_time = datetime.now(UTC)
 
     async def _send_event(self, event_type: str, data: Dict[str, Any]) -> None:
-        """
-        Send an event to the WebSocket client.
+        """Send an event to the WebSocket client (non-blocking)."""
+        event = {
+            "type": event_type,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "elapsed": (datetime.now(UTC) - self.start_time).total_seconds(),
+            **data,
+        }
 
-        Args:
-            event_type: Type of event (e.g., "agent:thinking")
-            data: Event payload
-        """
+        async def _send():
+            try:
+                await self.websocket.send_json(event)
+                logger.debug(f"Sent event: {event_type}")
+            except Exception as e:
+                logger.error(f"Failed to send WebSocket event: {e}")
+
+        # Schedule send without blocking the callback, then yield to let it run
+        import asyncio
+
+        asyncio.create_task(_send())
+        # Give the event loop a chance to run the scheduled task
         try:
-            event = {
-                "type": event_type,
-                "timestamp": datetime.now(UTC).isoformat(),
-                "elapsed": (datetime.now(UTC) - self.start_time).total_seconds(),
-                **data,
-            }
-            await self.websocket.send_json(event)
-            logger.debug(f"Sent event: {event_type}")
-        except Exception as e:
-            logger.error(f"Failed to send WebSocket event: {e}")
-            # Don't raise - callback errors should not break agent execution
+            await asyncio.sleep(0)
+        except Exception:
+            pass
 
     async def on_llm_start(
         self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
@@ -80,9 +85,9 @@ class WebSocketCallbackHandler(AsyncCallbackHandler):
                 text = response.generations[0][0].text
 
         await self._send_event(
-            "agent:thought",
+            "agent:thinking",
             {
-                "content": text[:500],  # Truncate for display
+                "content": text[:500],
                 "metadata": {
                     "tokens": response.llm_output.get("token_usage")
                     if response.llm_output
@@ -121,7 +126,7 @@ class WebSocketCallbackHandler(AsyncCallbackHandler):
         await self._send_event(
             "agent:tool_result",
             {
-                "output": output[:1000],  # Truncate long outputs
+                "result": output[:1000],
                 "metadata": {"run_id": kwargs.get("run_id")},
             },
         )
@@ -129,32 +134,33 @@ class WebSocketCallbackHandler(AsyncCallbackHandler):
     async def on_tool_error(self, error: Exception, **kwargs: Any) -> None:
         """Called when a tool encounters an error."""
         await self._send_event(
-            "agent:tool_error",
+            "agent:error",
             {
                 "error": str(error),
                 "metadata": {"run_id": kwargs.get("run_id")},
+                "recoverable": False,
             },
         )
 
     async def on_agent_action(self, action, **kwargs: Any) -> None:
         """Called when agent takes an action."""
         await self._send_event(
-            "agent:action",
+            "agent:tool_call",
             {
                 "tool": action.tool,
-                "tool_input": str(action.tool_input)[:500],
-                "log": action.log[:500] if action.log else "",
+                "args": {"input": str(action.tool_input)[:500]},
+                "metadata": {"log": action.log[:500] if action.log else ""},
             },
         )
 
     async def on_agent_finish(self, finish, **kwargs: Any) -> None:
         """Called when agent finishes execution."""
         await self._send_event(
-            "agent:finish",
+            "agent:complete",
             {
-                "output": str(finish.return_values.get("output", ""))[:500],
+                "answer": str(finish.return_values.get("output", ""))[:1000],
                 "metadata": {
-                    "total_elapsed": (
+                    "totalElapsed": (
                         datetime.now(UTC) - self.start_time
                     ).total_seconds(),
                 },

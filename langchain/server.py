@@ -4,7 +4,6 @@ FastAPI server that executes research tasks using LangChain agent.
 """
 
 import sys
-from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Any
 

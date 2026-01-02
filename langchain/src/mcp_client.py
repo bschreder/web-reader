@@ -1,13 +1,5 @@
 from __future__ import annotations
 
-"""MCP client wrapper built on FastMCP 2.0 client abstractions.
-
-This module provides a thin, opinionated wrapper around :class:`fastmcp.Client`
-for use by the LangChain orchestration service. It preserves the previous
-``call_tool`` interface and health check behavior while delegating protocol
-details to FastMCP itself.
-"""
-
 from typing import Any, Optional
 
 import httpx
@@ -15,6 +7,14 @@ from fastmcp import Client as FastMCPClient
 from loguru import logger
 
 from .config import FASTMCP_HEALTH_PORT, FASTMCP_HOST, FASTMCP_URL
+
+"""MCP client wrapper built on FastMCP 2.0 client abstractions.
+
+This module provides a thin, opinionated wrapper around :class:`fastmcp.Client`
+for use by the LangChain orchestration service. It preserves the previous
+``call_tool`` interface and health check behavior while delegating protocol
+details to FastMCP itself.
+"""
 
 
 class MCPClient:

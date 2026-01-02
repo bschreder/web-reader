@@ -10,10 +10,20 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    Query,
+    Request,
+)
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from loguru import logger
 
 from src.artifacts import (
@@ -34,12 +44,16 @@ from src.config import (
 )
 from src.langchain import close_langchain_client, get_langchain_client
 from src.models import (
+    CompleteEvent,
+    ErrorEvent,
+    ErrorResponse,
     HealthResponse,
     TaskCancel,
     TaskCreate,
     TaskListResponse,
     TaskResponse,
     TaskStatus,
+    ThinkingEvent,
 )
 from src.tasks import (
     create_task,
@@ -87,7 +101,28 @@ app = FastAPI(
     description="Backend service for autonomous web research tasks",
     version="0.1.0",
     lifespan=lifespan,
+    json_schema_extra={
+        "openapi": {
+            "info": {
+                "x-logo": {
+                    "url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"
+                }
+            }
+        }
+    },
 )
+
+# Configure JSON encoder to use Pydantic's by_alias for camelCase output
+
+
+def custom_json_encoder(obj):
+    """Custom JSON encoder that handles Pydantic models with by_alias."""
+    if isinstance(obj, BaseModel):
+        return obj.model_dump(by_alias=True, exclude_none=False)
+    return jsonable_encoder(obj)
+
+
+app.json_encoder = custom_json_encoder
 
 # CORS middleware
 app.add_middleware(
@@ -100,6 +135,45 @@ app.add_middleware(
 
 # Static files for artifacts
 app.mount("/artifacts", StaticFiles(directory=str(ARTIFACT_DIR)), name="artifacts")
+
+# ============================================================================
+# Global Exception Handlers
+# ============================================================================
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Return structured error response for validation errors."""
+    err = ErrorResponse(
+        error="Validation error",
+        error_code="validation_error",
+        details={"errors": exc.errors()},
+    )
+    return JSONResponse(content=custom_json_encoder(err), status_code=422)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Return structured error response for HTTP exceptions."""
+    err = ErrorResponse(
+        error=str(exc.detail) if exc.detail else "HTTP error",
+        error_code="http_error",
+        details={"status_code": exc.status_code},
+    )
+    return JSONResponse(content=custom_json_encoder(err), status_code=exc.status_code)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Return structured error response for unexpected exceptions."""
+    logger.exception("Unhandled server error")
+    err = ErrorResponse(
+        error="Internal server error",
+        error_code="internal_error",
+        details={"message": str(exc)},
+    )
+    return JSONResponse(content=custom_json_encoder(err), status_code=500)
+
 
 # ============================================================================
 # Health Endpoint
@@ -144,6 +218,11 @@ async def create_new_task(task_data: TaskCreate):
             max_depth=task_data.max_depth,
             max_pages=task_data.max_pages,
             time_budget=task_data.time_budget,
+            search_engine=task_data.search_engine,
+            max_results=task_data.max_results,
+            safe_mode=task_data.safe_mode,
+            same_domain_only=task_data.same_domain_only,
+            allow_external_links=task_data.allow_external_links,
         )
 
         # Start task execution in background
@@ -270,37 +349,41 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
         # Verify task exists
         task = await get_task(task_id)
         if not task:
-            await websocket.send_json(
-                {
-                    "type": "error",
-                    "error": f"Task {task_id} not found",
-                }
+            error_event = ErrorEvent(
+                task_id=task_id,
+                error=f"Task {task_id} not found",
+                recoverable=False,
             )
+            await websocket.send_json(custom_json_encoder(error_event))
             await websocket.close(code=1008)
             return
 
         logger.info(f"WebSocket connected for task {task_id}")
 
-        # Send initial status
-        await websocket.send_json(
-            {
-                "type": "task:status",
-                "status": task.status.value,
-                "task_id": task_id,
-            }
+        # Send initial status via thinking event
+        thinking_event = ThinkingEvent(
+            task_id=task_id,
+            content=f"Task {task.status.value}",
         )
+        await websocket.send_json(custom_json_encoder(thinking_event))
 
         # If task is already complete, send result and close
         if task.status.value in ("completed", "failed", "cancelled"):
-            await websocket.send_json(
-                {
-                    "type": "task:complete",
-                    "status": task.status.value,
-                    "answer": task.answer,
-                    "citations": task.citations,
-                    "error": task.error,
-                }
-            )
+            if task.status.value == "failed":
+                error_event = ErrorEvent(
+                    task_id=task_id,
+                    error=task.error or "Task failed",
+                    recoverable=False,
+                )
+                await websocket.send_json(custom_json_encoder(error_event))
+            else:
+                complete_event = CompleteEvent(
+                    task_id=task_id,
+                    answer=task.answer or "",
+                    citations=task.citations or [],
+                    duration=task.duration or 0.0,
+                )
+                await websocket.send_json(custom_json_encoder(complete_event))
             await websocket.close()
             return
 
@@ -330,7 +413,7 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
                     event = json.loads(message)
                     event_type = event.get("type", "")
 
-                    # Forward all events to frontend
+                    # Forward all events to frontend (already in correct format from orchestrator)
                     await websocket.send_json(event)
 
                     # Update task status based on events
@@ -354,35 +437,40 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
                 f"Orchestrator connection error for task {task_id}: {orchestrator_error}"
             )
             # Fall back to polling if orchestrator WebSocket fails
-            await websocket.send_json(
-                {
-                    "type": "warning",
-                    "message": "Streaming unavailable, polling for updates",
-                }
+            warning_event = ThinkingEvent(
+                task_id=task_id,
+                content="Streaming unavailable, polling for updates",
             )
+            await websocket.send_json(custom_json_encoder(warning_event))
 
             while True:
                 task = await get_task(task_id)
                 if not task:
                     break
 
-                await websocket.send_json(
-                    {
-                        "type": "task:status",
-                        "status": task.status.value,
-                    }
+                # Send status update
+                status_event = ThinkingEvent(
+                    task_id=task_id,
+                    content=f"Status: {task.status.value}",
                 )
+                await websocket.send_json(custom_json_encoder(status_event))
 
                 if task.status.value in ("completed", "failed", "cancelled"):
-                    await websocket.send_json(
-                        {
-                            "type": "task:complete",
-                            "status": task.status.value,
-                            "answer": task.answer,
-                            "citations": task.citations,
-                            "error": task.error,
-                        }
-                    )
+                    if task.status.value == "failed":
+                        error_event = ErrorEvent(
+                            task_id=task_id,
+                            error=task.error or "Task failed",
+                            recoverable=False,
+                        )
+                        await websocket.send_json(custom_json_encoder(error_event))
+                    else:
+                        complete_event = CompleteEvent(
+                            task_id=task_id,
+                            answer=task.answer or "",
+                            citations=task.citations or [],
+                            duration=task.duration or 0.0,
+                        )
+                        await websocket.send_json(custom_json_encoder(complete_event))
                     break
 
                 await asyncio.sleep(1)
@@ -393,7 +481,12 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
     except Exception as e:
         logger.error(f"WebSocket error for task {task_id}: {e}")
         try:
-            await websocket.send_json({"type": "error", "error": str(e)})
+            error_event = ErrorEvent(
+                task_id=task_id,
+                error=str(e),
+                recoverable=False,
+            )
+            await websocket.send_json(custom_json_encoder(error_event))
         except Exception:
             pass
 

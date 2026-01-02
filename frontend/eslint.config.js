@@ -70,12 +70,13 @@ export default [
         'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-
+      
       // React
       'react/react-in-jsx-scope': 'off',
       'react/jsx-uses-react': 'off',
 
       // Custom and Overrides
+      quotes: ['error', 'single', { avoidEscape: true }],
       semi: ['error', 'always'],
     },
   },

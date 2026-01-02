@@ -2,10 +2,25 @@
 
 This document provides comprehensive instructions for running and maintaining tests across all Web Reader services.
 
+## Current Test Status ✅
+
+All core services have passing tests with good coverage:
+
+| Service       | Unit Tests | Integration Tests | E2E Tests         | Coverage | Status              |
+| ------------- | ---------- | ----------------- | ----------------- | -------- | ------------------- |
+| **FastMCP**   | 66 passing | ✅ Included       | ✅ Included       | **93%**  | ✅ All passing      |
+| **LangChain** | 36 passing | 5 passing         | ⚠️ Requires stack | **85%**  | ✅ Unit+Integration |
+| **Backend**   | 53 passing | 16 passing        | ⚠️ Requires stack | **89%**  | ✅ Unit+Integration |
+| **Frontend**  | 16 passing | 4 browser tests   | ⚠️ Requires stack | **46%**  | ✅ All passing      |
+
+**Note**: E2E tests requiring the full stack (Ollama, Playwright, all services) can be run when containers are started. Unit and integration tests run independently in the devcontainer.
+
 ## Table of Contents
 
+- [Current Test Status](#current-test-status-)
 - [Overview](#overview)
 - [Test Organization](#test-organization)
+- [Quick Start](#quick-start)
 - [Running Tests](#running-tests)
   - [From Devcontainer (Recommended)](#from-devcontainer-recommended)
   - [From Docker Containers](#from-docker-containers)
@@ -23,7 +38,7 @@ The Web Reader project follows a structured testing approach with three test lev
 2. **Integration Tests**: Tests that interact with real services (Playwright, Ollama, etc.)
 3. **End-to-End (E2E) Tests**: Full workflow tests simulating real usage
 
-All tests can be run either from within the VS Code devcontainer (recommended) or from within the running Docker containers.
+All tests can be run from within the VS Code devcontainer (recommended) or from within running Docker containers.
 
 ## Test Organization
 
@@ -42,28 +57,70 @@ Each service follows a standardized directory structure:
 │       ├── conftest.py
 │       └── test_*.py
 ├── src/               # Source code
-├── pytest.ini         # Pytest configuration
+├── pytest.ini         # Pytest configuration (Python services)
+├── vitest.config.ts   # Vitest configuration (Frontend)
 └── Dockerfile         # Multistage: base → dev → prod
 ```
 
-## Running Tests
+**Frontend Structure** (TypeScript/React):
 
-### From Devcontainer (Recommended)
+```
+frontend/
+├── tests/
+│   ├── unit/          # Unit tests (Vitest in Node environment)
+│   ├── browser/       # Browser tests (Vitest + Playwright)
+│   ├── integration/   # Integration tests
+│   └── e2e/           # E2E tests (Playwright)
+├── src/
+├── vitest.config.ts   # Multi-project: unit + browser
+└── package.json
+```
 
-The devcontainer has Python 3.13 and Node.js 24 pre-installed with all development dependencies.
+## Quick Start
 
-#### Quick Start - All Tests
+### Run All Tests (Devcontainer)
 
 ```bash
-# Run all unit tests for all Python services
+# Navigate to project root
 cd /workspaces/web-reader
-./scripts/test-all.sh unit
+
+# Run all Python service tests with coverage
+./scripts/test-all-python.sh
+
+# Individual services
+cd fastmcp && poetry run pytest --cov=src --cov-report=term
+cd langchain && poetry run pytest tests/unit tests/integration --cov=src --cov-report=term
+cd backend && poetry run pytest tests/unit tests/integration --cov=src --cov-report=term
+
+# Frontend (both unit and browser tests)
+cd frontend && npm run test:coverage
+```
+
+### View Coverage Reports
+
+HTML coverage reports are generated in each service's `coverage/` directory:
+
+```bash
+# FastMCP
+open fastmcp/coverage/html/index.html
+
+# LangChain
+open langchain/coverage/html/index.html
+
+# Backend
+open backend/coverage/html/index.html
+
+# Frontend
+open frontend/coverage/index.html
+```
 
 # Run all tests (unit + integration + e2e)
+
 ./scripts/test-all.sh all
 
 Note: The script automatically installs each Python service's runtime and test dependencies in the devcontainer before running tests.
-```
+
+````
 
 #### FastMCP Tests
 
@@ -81,43 +138,84 @@ pytest tests/e2e -v --maxfail=1
 
 # All tests
 pytest tests/ --cov=src --cov-branch --cov-report=html
-```
+````
 
-#### Backend Tests
+## Running Tests
+
+### From Devcontainer (Recommended)
+
+The devcontainer has Python 3.13 and Node.js 24 pre-installed. Poetry environments are isolated per service.
+
+#### FastMCP Tests
 
 ```bash
-cd /workspaces/web-reader/backend
+cd /workspaces/web-reader/fastmcp
 
-# Unit tests
-pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
+# Unit tests only (fast, no external dependencies)
+poetry run pytest tests/unit/ -v
 
-# Integration tests (requires LangChain orchestrator running)
-pytest tests/integration -v
+# Integration tests (requires Playwright container running)
+poetry run pytest tests/integration/ -v
 
-# E2E tests
-pytest tests/e2e -v
+# E2E tests (full workflows)
+poetry run pytest tests/e2e/ -v
 
-# All tests
-pytest tests/ --cov=src --cov-branch --cov-report=html
+# All tests with coverage
+poetry run pytest --cov=src --cov-report=html --cov-report=term
+
+# Quick validation after changes
+poetry run ruff check --fix . && poetry run ruff format . && poetry run pytest -v
 ```
+
+**Current Status**: ✅ 66 tests passing, 93% coverage
 
 #### LangChain Tests
 
 ```bash
 cd /workspaces/web-reader/langchain
 
-# Unit tests
-pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
+# Unit tests only
+poetry run pytest tests/unit/ -v
 
 # Integration tests (requires Ollama + FastMCP running)
-pytest tests/integration -v
+poetry run pytest tests/integration/ -v
 
-# E2E tests
-pytest tests/e2e -v
+# E2E tests (requires full stack)
+poetry run pytest tests/e2e/ -v
 
-# All tests
-pytest tests/ --cov=src --cov-branch --cov-report=html
+# Unit + Integration with coverage
+poetry run pytest tests/unit/ tests/integration/ --cov=src --cov-report=html --cov-report=term
+
+# Quick validation after changes
+poetry run ruff check --fix . && poetry run ruff format . && poetry run pytest tests/unit/ tests/integration/ -v
 ```
+
+**Current Status**: ✅ 41 tests passing (unit+integration), 85% coverage  
+**Note**: E2E tests require Ollama, FastMCP, and Playwright containers running
+
+#### Backend Tests
+
+```bash
+cd /workspaces/web-reader/backend
+
+# Unit tests only
+poetry run pytest tests/unit/ -v
+
+# Integration tests (mocked LangChain client)
+poetry run pytest tests/integration/ -v
+
+# E2E tests (requires LangChain service running)
+poetry run pytest tests/e2e/ -v
+
+# Unit + Integration with coverage
+poetry run pytest tests/unit/ tests/integration/ --cov=src --cov-report=html --cov-report=term
+
+# Quick validation after changes
+poetry run ruff check --fix . && poetry run ruff format . && poetry run pytest tests/unit/ tests/integration/ -v
+```
+
+**Current Status**: ✅ 69 tests passing (unit+integration), 89% coverage  
+**Note**: E2E tests require LangChain orchestrator running
 
 #### Frontend Tests
 
@@ -130,20 +228,44 @@ npm run test:unit
 # Browser tests (Vitest browser mode)
 npm run test:browser
 
-# E2E tests (Playwright)
-npx playwright test tests/e2e
+# All tests with combined coverage
+npm run test:coverage
 
-# All tests with coverage
-npm test
+# E2E tests (Playwright, requires backend running)
+npm run test:e2e
+
+# Linting
+npm run lint
+npm run typecheck
+
+# Quick validation after changes
+npm run lint:fix && npm run typecheck && npm run test:coverage
 ```
+
+**Current Status**: ✅ 20 tests passing (16 unit + 4 browser), 46% combined coverage  
+**Frontend uses multi-project Vitest**: Unit and browser tests both contribute to coverage
 
 ### From Docker Containers
 
-Tests can also be executed inside running dev containers:
+Tests can also be executed inside running dev containers for integration/e2e testing:
 
 #### Prerequisites
 
-Start the dev stack:
+Start the infrastructure (Ollama + Playwright):
+
+```bash
+cd /workspaces/web-reader/container
+./start.sh
+```
+
+Start the dev stack (optional, for full e2e):
+
+```bash
+cd /workspaces/web-reader
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
+```
+
+#### Run Tests in Containers
 
 ```bash
 cd /workspaces/web-reader
@@ -164,6 +286,8 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 
 # Frontend unit tests
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:unit
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:browser
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:e2e
 
 ## End-to-End Workflow (Typical Use Case)
 

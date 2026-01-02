@@ -7,7 +7,7 @@ import { playwright } from '@vitest/browser-playwright';
 export default defineConfig({
   plugins: [tsConfigPaths(), react()],
   optimizeDeps: {
-    include: ['@tanstack/react-router', '@tanstack/react-router-devtools'],
+    include: ['@tanstack/react-router', '@tanstack/react-router-devtools', 'vitest-browser-react'],
   },
   test: {
     globals: true,
@@ -33,6 +33,7 @@ export default defineConfig({
         '**/*.config.{js,ts}',
         '**/routeTree.gen.ts',
         'src/entries/**',
+        'src/**/*.css',
       ],
     },
     projects: [

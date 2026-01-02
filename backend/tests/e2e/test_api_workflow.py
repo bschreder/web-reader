@@ -28,7 +28,7 @@ class TestAPIWorkflow:
             assert response.status_code == 200 or response.status_code == 201
 
             data = response.json()
-            task_id = data["task_id"]
+            task_id = data["taskId"]  # camelCase in API response
             assert task_id is not None
 
             # Get task status
@@ -36,7 +36,7 @@ class TestAPIWorkflow:
             assert response.status_code == 200
 
             task_status = response.json()
-            assert task_status["task_id"] == task_id
+            assert task_status["taskId"] == task_id  # camelCase in API response
             assert task_status["question"] == task_data.question
 
     @pytest.mark.asyncio
@@ -81,7 +81,7 @@ class TestAPIWorkflow:
             assert response.status_code in [200, 201]
 
             data = response.json()
-            task_id = data["task_id"]
+            task_id = data["taskId"]  # camelCase in API response
 
             # Poll for completion (with timeout)
             # max_wait = 45  # seconds
@@ -132,7 +132,7 @@ class TestAPIWorkflow:
             assert response.status_code in [200, 201]
 
             data = response.json()
-            task_id = data["task_id"]
+            task_id = data["taskId"]  # camelCase in API response
 
             # Verify task was created
             response = await client.get(f"/api/tasks/{task_id}")

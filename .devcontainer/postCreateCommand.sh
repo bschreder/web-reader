@@ -13,7 +13,15 @@ fi
 
 # Install frontend dependencies
 if [ -d "/workspaces/web-reader/frontend" ]; then
-  (npm --prefix /workspaces/web-reader/frontend ci || npm --prefix /workspaces/web-reader/frontend install)
+  # Clean up stale contents and package-lock
+  if [ -d "/workspaces/web-reader/frontend/node_modules" ]; then
+    find /workspaces/web-reader/frontend/node_modules -mindepth 1 -delete 2>/dev/null || true
+  fi
+  rm -f /workspaces/web-reader/frontend/package-lock.json
+  npm cache clean --force 2>/dev/null || true
+  
+  # Install fresh dependencies
+  npm --prefix /workspaces/web-reader/frontend install --loglevel=warn
   npx --prefix /workspaces/web-reader/frontend playwright install chromium --with-deps || true
 fi
 
@@ -22,6 +30,8 @@ for svc in backend fastmcp langchain; do
   svcdir="/workspaces/web-reader/$svc"
   if [ -d "$svcdir" ] && [ -f "$svcdir/pyproject.toml" ]; then
     echo "Installing Python dependencies for $svc via Poetry..."
+    # Clean up any stale venv to avoid permission issues
+    rm -rf "$svcdir/.venv" "$svcdir/__pycache__" "$svcdir/build" "$svcdir/dist"
     (cd "$svcdir"  && poetry lock --no-interaction --no-ansi && poetry install --with test,debug --no-interaction --no-ansi)
   fi
 done

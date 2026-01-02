@@ -40,6 +40,11 @@ class Task:
         max_depth: int = 3,
         max_pages: int = 20,
         time_budget: int = 120,
+        search_engine: str = "duckduckgo",
+        max_results: int = 10,
+        safe_mode: bool = True,
+        same_domain_only: bool = False,
+        allow_external_links: bool = True,
     ):
         self.task_id = task_id
         self.question = question
@@ -47,6 +52,11 @@ class Task:
         self.max_depth = max_depth
         self.max_pages = max_pages
         self.time_budget = time_budget
+        self.search_engine = search_engine
+        self.max_results = max_results
+        self.safe_mode = safe_mode
+        self.same_domain_only = same_domain_only
+        self.allow_external_links = allow_external_links
 
         self.status = TaskStatus.CREATED
         self.created_at = datetime.now()
@@ -87,6 +97,11 @@ class Task:
             "screenshots": self.screenshots,
             "error": self.error,
             "metadata": self.metadata,
+            "search_engine": getattr(self, "search_engine", "duckduckgo"),
+            "max_results": getattr(self, "max_results", 10),
+            "safe_mode": getattr(self, "safe_mode", True),
+            "same_domain_only": getattr(self, "same_domain_only", False),
+            "allow_external_links": getattr(self, "allow_external_links", True),
         }
 
     async def cancel(self, reason: Optional[str] = None):
@@ -116,6 +131,11 @@ async def create_task(
     max_depth: int = 3,
     max_pages: int = 20,
     time_budget: int = 120,
+    search_engine: str = "duckduckgo",
+    max_results: int = 10,
+    safe_mode: bool = True,
+    same_domain_only: bool = False,
+    allow_external_links: bool = True,
 ) -> Task:
     """
     Create a new task and add it to the queue.
@@ -126,12 +146,29 @@ async def create_task(
         max_depth: Maximum link depth
         max_pages: Maximum pages to visit
         time_budget: Time budget in seconds
+        search_engine: Search engine to use
+        max_results: Max search results to examine
+        safe_mode: Filter unsafe content
+        same_domain_only: Only follow same-domain links
+        allow_external_links: Allow external links
 
     Returns:
         Created task
     """
     task_id = str(uuid.uuid4())
-    task = Task(task_id, question, seed_url, max_depth, max_pages, time_budget)
+    task = Task(
+        task_id,
+        question,
+        seed_url,
+        max_depth,
+        max_pages,
+        time_budget,
+        search_engine,
+        max_results,
+        safe_mode,
+        same_domain_only,
+        allow_external_links,
+    )
 
     async with _task_lock:
         _tasks[task_id] = task

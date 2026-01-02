@@ -4,11 +4,9 @@ import os
 import sys
 import asyncio
 from pathlib import Path
-from typing import AsyncGenerator
 
 from dotenv import load_dotenv
 import pytest
-from httpx import AsyncClient
 
 
 # Load .env files early so modules that read env vars at import time see values
@@ -44,12 +42,12 @@ async def test_artifact_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-async def test_client() -> AsyncGenerator[AsyncClient, None]:
-    """Create a test HTTP client."""
+def test_client():
+    """Create a test HTTP client for FastAPI testing."""
+    from fastapi.testclient import TestClient
     from server import app
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        yield client
+    return TestClient(app)
 
 
 @pytest.fixture

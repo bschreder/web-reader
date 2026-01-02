@@ -1,15 +1,11 @@
 import React from 'react';
 import { describe, expect, it } from 'vitest';
-import { createRoot } from 'react-dom/client';
+import { cleanup, render } from 'vitest-browser-react';
 import AnswerDisplay from '../../../src/components/AnswerDisplay';
 
 describe('AnswerDisplay (browser)', () => {
-  it('renders answer and citations', () => {
-    const el = document.createElement('div');
-    document.body.appendChild(el);
-    const root = createRoot(el);
-
-    root.render(
+  it('renders answer and citations', async () => {
+    const screen = await render(
       <AnswerDisplay
         answer={'Line 1\nLine 2'}
         citations={[{ title: 'Example', url: 'https://example.com' }]}
@@ -17,9 +13,8 @@ describe('AnswerDisplay (browser)', () => {
       />
     );
 
-    expect(el.textContent).toContain('Citations');
-    expect(el.textContent).toContain('Line 1');
-    root.unmount();
-    el.remove();
+    await expect.element(screen.getByText('Citations')).toBeVisible();
+    await expect.element(screen.getByText('Line 1')).toBeVisible();
+    await cleanup();
   });
 });

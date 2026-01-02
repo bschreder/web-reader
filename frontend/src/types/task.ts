@@ -1,13 +1,18 @@
-export type TaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type TaskStatus = 'created' | 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 export interface CreateTaskRequest {
   question: string
   seedUrl?: string
-  options?: {
-    depth?: number
-    pages?: number
-    timeBudgetSec?: number
-  }
+  maxDepth?: number
+  maxPages?: number
+  timeBudget?: number
+  // UC-01: Web Search parameters
+  searchEngine?: 'duckduckgo' | 'bing' | 'google' | 'custom'
+  maxResults?: number
+  safeMode?: boolean
+  // UC-02: Link following parameters
+  sameDomainOnly?: boolean
+  allowExternalLinks?: boolean
 }
 
 export interface TaskSummary {

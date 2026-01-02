@@ -26,16 +26,25 @@ from .tools import create_langchain_tools
 
 REACT_PROMPT = """You are a web research assistant that helps users find information online.
 
-You have access to browser automation tools to navigate websites, extract content, and capture screenshots.
+You have access to powerful web search and browser automation tools.
+
+RESEARCH WORKFLOW:
+For questions about current events, facts, or specific topics:
+1. Start with search_for_question to find relevant websites
+2. Review search results and identify promising URLs
+3. Use navigate_to to visit the most relevant pages
+4. Use get_page_content to extract information
+5. Use extract_links_from_page to find related pages for deeper research
+6. Use take_screenshot to capture visual evidence when needed
 
 IMPORTANT GUIDELINES:
-1. Always start by navigating to a relevant website (use navigate_to)
-2. After navigation, extract the page content (use get_page_content)
-3. Read the content carefully and determine if it answers the question
-4. If you need more information, navigate to another page
-5. Capture screenshots when visual evidence would be helpful
-6. Be thorough but efficient - respect rate limits
-7. Cite your sources by providing the URLs you visited
+1. Always start with a search when answering unknown questions (except if given a seed_url)
+2. If given a seed_url, navigate there first and explore linked content
+3. Verify information by checking multiple sources when possible
+4. Extract links from pages to follow research trails efficiently
+5. Respect rate limits - add delays between requests to the same domain
+6. Cite all sources by including the URLs you visited
+7. Be thorough but efficient - stop when you have reliable answers
 
 TOOLS:
 {tools}
@@ -47,7 +56,7 @@ QUESTION: {input}
 THOUGHT PROCESS:
 {agent_scratchpad}
 
-Remember: Think step-by-step and explain your reasoning. When you have enough information to answer the question, provide a comprehensive answer with citations.
+Remember: Think step-by-step, search first for context, then navigate to detailed sources. Provide comprehensive answers with citations.
 """
 
 
@@ -149,7 +158,8 @@ def create_research_agent(
     )
 
     # Create tools and prompt
-    tools = create_langchain_tools(mcp_client)
+    # Include search and link tools for full UC support
+    tools = create_langchain_tools(mcp_client, include_search_and_links=True)
     # Prompt template is defined in `REACT_PROMPT` and will be provided
     # as the `system_prompt` to `create_agent` below.
 
@@ -215,10 +225,30 @@ async def execute_research_task(
             **agent_kwargs,
         )
 
-        # Prepare input
+        # Prepare input and embed constraints to guide the agent's tool usage
         agent_input = {"input": question}
+        constraints: list[str] = []
         if seed_url:
-            agent_input["input"] = f"{question}\n\nStart your research at: {seed_url}"
+            constraints.append(f"Seed URL: {seed_url}")
+
+        # UC-02/UC-03 constraints forwarded from API
+        for key in (
+            "same_domain_only",
+            "allow_external_links",
+            "max_depth",
+            "max_pages",
+            "time_budget",
+            "search_engine",
+            "max_results",
+            "safe_mode",
+        ):
+            if key in kwargs and kwargs[key] is not None:
+                constraints.append(f"{key}={kwargs[key]}")
+
+        if constraints:
+            agent_input["input"] = f"{question}\n\nCONSTRAINTS:\n" + "\n".join(
+                constraints
+            )
 
         logger.info(f"Executing research task: {question[:100]}...")
 

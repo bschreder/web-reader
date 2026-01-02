@@ -1,4 +1,3 @@
-import pytest
 import types
 
 from src.agent import _extract_answer

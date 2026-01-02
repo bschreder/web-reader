@@ -5,6 +5,7 @@ Model Context Protocol as well as higher-level resources and prompts that
 provide more structured access patterns for the LangChain orchestrator.
 """
 
+import asyncio
 import base64
 import time
 from typing import Any
@@ -15,7 +16,14 @@ from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from pydantic import BaseModel, Field
 
 from .browser import get_current_page, normalize_url
-from .config import HTTP_ERROR_THRESHOLD, HTTP_STATUS_MESSAGES, MAX_LINKS, MAX_TEXT_CHARS
+from .config import (
+    HTTP_ERROR_THRESHOLD,
+    HTTP_STATUS_MESSAGES,
+    MAX_LINKS,
+    MAX_TEXT_CHARS,
+    REQUEST_DELAY_MIN,
+    REQUEST_DELAY_MAX,
+)
 from .filtering import is_domain_allowed
 from .rate_limiting import enforce_rate_limit
 
@@ -149,6 +157,38 @@ async def navigate_to(
         # Handle error responses
         if response.status >= HTTP_ERROR_THRESHOLD:
             status_text = HTTP_STATUS_MESSAGES.get(response.status, "Unknown Error")
+
+            # Special handling for 429: apply backoff and retry once
+            if response.status == 429:
+                try:
+                    from .rate_limiting import REQUEST_DELAY_MIN, REQUEST_DELAY_MAX
+                except Exception:
+                    REQUEST_DELAY_MIN, REQUEST_DELAY_MAX = 10, 20
+
+                # Exponential-ish backoff within configured window
+                backoff = (REQUEST_DELAY_MIN + REQUEST_DELAY_MAX) / 2
+                logger.warning(
+                    f"HTTP 429 received for {url}. Backing off ~{backoff:.1f}s and retrying once."
+                )
+                await asyncio.sleep(backoff)
+                retry_start = time.time()
+                retry = await page.goto(url, wait_until=wait_until, timeout=30000)
+                retry_time = time.time() - retry_start
+                if retry and retry.status < HTTP_ERROR_THRESHOLD:
+                    title = await page.title()
+                    final_url = page.url
+                    logger.info(
+                        f"Retry succeeded for {final_url} in {retry_time:.2f}s (status: {retry.status})"
+                    )
+                    success_data = {
+                        "title": title,
+                        "url": final_url,
+                        "http_status": retry.status,
+                        "load_time": retry_time,
+                        "redirected": final_url != url,
+                    }
+                    return {"status": "success", **success_data, "data": success_data}
+
             return {
                 "status": "error",
                 "http_status": response.status,
@@ -354,4 +394,3 @@ async def summarize_current_page(task_id: str = "default") -> str:
     title = result.get("title", "Untitled")
     text = result.get("text", "")
     return f"Page title: {title}\n\nContent:\n{text}"
-

@@ -1,4 +1,5 @@
 import type { StreamEvent } from '@src/types/task';
+import { StreamEventSchema } from '@src/schemas/task.schema';
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000';
 
@@ -12,7 +13,7 @@ export interface WebSocketManagerOptions {
 }
 
 /**
- *
+ * WebSocket manager for handling real-time task stream events.
  */
 export class WebSocketManager {
   private ws?: WebSocket;
@@ -35,10 +36,12 @@ export class WebSocketManager {
     this.ws = new WebSocket(url);
     this.ws.onmessage = (e: MessageEvent<string>): void => {
       try {
-        const ev = JSON.parse(e.data) as StreamEvent;
+        const rawData = JSON.parse(e.data);
+        // Validate stream event with zod
+        const ev = StreamEventSchema.parse(rawData);
         this.opts.onEvent(ev);
       } catch (err) {
-        console.error('Invalid event', err);
+        console.error('Invalid event data:', err);
       }
     };
     this.ws.onclose = (): void => this.opts.onClose?.();

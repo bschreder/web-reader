@@ -13,7 +13,9 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from .collector import get_collector
+from .link_extractor import LinkTracker, extract_links, filter_links
 from .mcp_client import MCPClient
+from .search import search
 
 
 # ============================================================================
@@ -47,6 +49,46 @@ class TakeScreenshotArgs(BaseModel):
     full_page: bool = Field(
         False,
         description="Capture full scrollable page (True) or viewport only (False)",
+    )
+
+
+class SearchArgs(BaseModel):
+    """Arguments for search_for_question tool."""
+
+    query: str = Field(..., description="Search query/question to answer")
+    search_engine: str = Field(
+        default="duckduckgo",
+        description="Search engine to use: 'duckduckgo', 'bing', or 'google'",
+    )
+    max_results: int = Field(
+        default=5,
+        description="Maximum number of search results to return (1-50)",
+    )
+
+
+class ExtractLinksArgs(BaseModel):
+    """Arguments for extract_links_from_page tool."""
+
+    html_content: str = Field(
+        ...,
+        description="HTML content to extract links from (usually from get_page_content)",
+    )
+    base_url: str = Field(..., description="Base URL for resolving relative links")
+    max_links: int = Field(
+        default=10,
+        description="Maximum number of links to extract",
+    )
+    same_domain_only: bool = Field(
+        default=False,
+        description="When true, only include links on the same domain as base_url",
+    )
+    allow_external_links: bool = Field(
+        default=True,
+        description="When false, exclude links that go to a different domain than base_url",
+    )
+    max_depth: int = Field(
+        default=2,
+        description="Maximum depth to assign/follow for extracted links",
     )
 
 
@@ -102,7 +144,9 @@ async def get_page_content_wrapper(mcp_client: MCPClient) -> str:
         # ``current_page`` is the resource URI we register in fastmcp/server.py.
         # We intentionally reach into the underlying FastMCP client here to
         # take advantage of richer resource semantics.
-        if getattr(mcp_client, "_client", None) is not None:  # pragma: no cover - defensive
+        if (
+            getattr(mcp_client, "_client", None) is not None
+        ):  # pragma: no cover - defensive
             result = await mcp_client._client.get_resource("current_page")  # type: ignore[attr-defined]
         else:
             result = await mcp_client.call_tool("get_page_content", {})
@@ -170,14 +214,115 @@ async def take_screenshot_wrapper(full_page: bool, mcp_client: MCPClient) -> str
         return f"Screenshot failed: {error}"
 
 
-# ============================================================================
-# Tool Creation
-# ============================================================================
-
-
-def create_langchain_tools(mcp_client: MCPClient) -> list[StructuredTool]:
+async def search_for_question_wrapper(
+    query: str, search_engine: str, max_results: int
+) -> str:
     """
-    Create LangChain StructuredTool wrappers for MCP tools.
+    Search the web for information using specified search engine.
+
+    Args:
+        query: Search query/question
+        search_engine: Search engine to use ('duckduckgo', 'bing', 'google')
+        max_results: Maximum results to return (1-50)
+
+    Returns:
+        Human-readable search results
+    """
+    if max_results < 1 or max_results > 50:
+        return "Error: max_results must be between 1 and 50"
+
+    if search_engine not in ("duckduckgo", "bing", "google"):
+        return f"Error: Unknown search engine '{search_engine}'. Use 'duckduckgo', 'bing', or 'google'"
+
+    try:
+        results = await search(query, engine=search_engine, max_results=max_results)
+
+        if not results:
+            return f"No results found for '{query}' on {search_engine}"
+
+        # Collect citations for search results
+        try:
+            for result in results:
+                get_collector().add_citation(
+                    result.url, title=result.title, source=f"search_{search_engine}"
+                )
+        except Exception:
+            logger.debug("Failed to record search result citations in collector")
+
+        # Format results for agent
+        formatted_results = [
+            f"{i + 1}. {result.title}\n   URL: {result.url}\n   Snippet: {result.snippet[:200]}..."
+            for i, result in enumerate(results[:max_results])
+        ]
+
+        return f"Found {len(results)} results for '{query}':\n\n" + "\n\n".join(
+            formatted_results
+        )
+
+    except Exception as e:
+        logger.error(f"Search failed: {e}")
+        return f"Search error: {str(e)}"
+
+
+async def extract_links_from_page_wrapper(
+    html_content: str,
+    base_url: str,
+    max_links: int,
+    same_domain_only: bool,
+    allow_external_links: bool,
+    max_depth: int,
+) -> str:
+    """
+    Extract and filter links from HTML content.
+
+    Args:
+        html_content: HTML content to parse
+        base_url: Base URL for resolving relative links
+        max_links: Maximum links to extract
+
+    Returns:
+        Human-readable list of extracted links
+    """
+    try:
+        # Extract links from HTML
+        links = extract_links(html_content, base_url)
+
+        if not links:
+            return "No links found in page content"
+
+        # Filter links (basic filtering, can be enhanced)
+        filtered = filter_links(
+            links,
+            seed_url=base_url,
+            same_domain_only=same_domain_only,
+            allow_external_links=allow_external_links,
+            max_depth=max_depth,
+        )
+
+        if not filtered:
+            return "No valid links found after filtering"
+
+        # Return top links
+        top_links = filtered[:max_links]
+        formatted_links = [
+            f"{i + 1}. {link.text or 'Untitled'}\n   URL: {link.url}"
+            for i, link in enumerate(top_links)
+        ]
+
+        return f"Extracted {len(top_links)} links from page:\n\n" + "\n\n".join(
+            formatted_links
+        )
+
+    except Exception as e:
+        logger.error(f"Link extraction failed: {e}")
+        return f"Link extraction error: {str(e)}"
+
+
+def create_langchain_tools(
+    mcp_client: MCPClient, include_search_and_links: bool = False
+) -> list[StructuredTool]:
+    """
+    Create LangChain StructuredTool wrappers for MCP tools and web utilities.
 
     Args:
         mcp_client: MCP client instance
@@ -227,5 +372,51 @@ Returns confirmation message with approximate image size.""",
     )
     tools.append(screenshot_tool)
 
-    logger.info(f"Created {len(tools)} LangChain tools from MCP client")
+    if include_search_and_links:
+        # Search tool
+        search_tool = StructuredTool.from_function(
+            coroutine=lambda query,
+            search_engine="duckduckgo",
+            max_results=5: search_for_question_wrapper(
+                query, search_engine, max_results
+            ),
+            name="search_for_question",
+            description="""Search the web for information to answer a question.
+Use this as a starting point to find relevant websites before navigating to them.
+Supports DuckDuckGo (default, fast), Bing (comprehensive), and Google (blocked unless using browser).
+Returns search results with titles, URLs, and snippets.""",
+            args_schema=SearchArgs,
+        )
+        tools.append(search_tool)
+
+        # Link extraction tool
+        links_tool = StructuredTool.from_function(
+            coroutine=lambda html_content,
+            base_url,
+            max_links=10,
+            same_domain_only=False,
+            allow_external_links=True,
+            max_depth=2: extract_links_from_page_wrapper(
+                html_content,
+                base_url,
+                max_links,
+                same_domain_only,
+                allow_external_links,
+                max_depth,
+            ),
+            name="extract_links_from_page",
+            description="""Extract and filter links from the current page's HTML content.
+Use this to identify other pages to navigate to for deeper research.
+Returns a list of clickable links with their text and URLs.
+Automatically filters out invalid/non-content links. Configure domain behavior with:
+- same_domain_only: only keep links on the same domain as base_url
+- allow_external_links: if false, exclude off-domain links
+- max_depth: cap the assigned depth for extracted links""",
+            args_schema=ExtractLinksArgs,
+        )
+        tools.append(links_tool)
+
+    logger.info(
+        f"Created {len(tools)} LangChain tools from MCP client and web utilities"
+    )
     return tools

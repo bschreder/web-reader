@@ -64,6 +64,7 @@ Use `.env.example` as the source of truth. Common keys you’ll reference most:
 - Frontend HMR and structure: `frontend/README.md`
 
 ## Technology Links
+
 - LangChain: https://docs.langchain.com/oss/python/langchain/overview
 - FastMCP: https://gofastmcp.com/getting-started/welcome
 - FastAPI: https://fastapi.tiangolo.com
@@ -79,4 +80,4 @@ Use `.env.example` as the source of truth. Common keys you’ll reference most:
 
 - Vite: https://vite.dev/guide/
 - Vitest: https://vitest.dev/guide/
-
+- Chrome DevTools MCP Server: https://github.com/ChromeDevTools/chrome-devtools-mcp
