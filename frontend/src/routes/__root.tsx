@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
-import { createRootRoute, HeadContent, Outlet, useRouterState } from '@tanstack/react-router';
+import { createRootRoute, HeadContent, Outlet, Scripts, useRouterState } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { JSX } from 'react';
+import { JSX, Suspense } from 'react';
 import Header from '@components/Header';
 import Footer from '@components/Footer';
 import Sidebar from '@components/Sidebar';
@@ -55,29 +55,31 @@ function InnerLayout(): JSX.Element {
  * @returns {JSX.Element} The root layout with header, footer, and 3-column layout
  */
 function RootLayout(): JSX.Element {
-  const showDevtools = import.meta.env.DEV;
   return (
     <QueryClientProvider client={qc}>
       <AdvancedOptionsProvider>
         <HeadContent />
         <InnerLayout />
       </AdvancedOptionsProvider>
-      {showDevtools && (
-        <TanStackDevtools
-          plugins={[
-            {
-              name: 'TanStack Query',
-              render: <ReactQueryDevtoolsPanel />,
-              defaultOpen: false,
-            },
-            {
-              name: 'TanStack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-              defaultOpen: false,
-            },
-          ]}
-        />
-      )}
+      <TanStackDevtools
+        plugins={[
+          {
+            name: 'TanStack Query',
+            render: <ReactQueryDevtoolsPanel />,
+            defaultOpen: false,
+          },
+          {
+            name: 'TanStack Router',
+            render: <TanStackRouterDevtoolsPanel />,
+            defaultOpen: false,
+          },
+        ]}
+        config={{
+          position: 'bottom-right',
+          defaultOpen: false,
+        }}
+      />
+    <Scripts />
     </QueryClientProvider>
   );
 }
@@ -89,7 +91,7 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'description', content: 'An advanced AI prompt generator and manager.' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [{ rel: 'stylesheet', href: appCss, precedence: 'default' }],
   }),
   notFoundComponent: NotFound,
   component: RootLayout,

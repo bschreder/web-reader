@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import TaskForm from '@components/TaskForm';
 import { RouterProvider, createRouter, createRootRoute, createMemoryHistory } from '@tanstack/react-router';
+import { AdvancedOptionsProvider } from '@src/lib/advanced-options-context';
 
 // Mock createTask to simulate navigation
 vi.mock('@lib/api', (): Record<string, unknown> => ({
@@ -17,17 +18,21 @@ vi.mock('@lib/api', (): Record<string, unknown> => ({
 function App(): JSX.Element {
   const rootRoute = createRootRoute({ component: TaskForm });
   const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ['/'] }) });
-  return <RouterProvider router={router} />;
+  return (
+    <AdvancedOptionsProvider>
+      <RouterProvider router={router} />
+    </AdvancedOptionsProvider>
+  );
 }
 
 describe('Task submission flow (browser)', () => {
   it('submits and renders form', async () => {
     const screen = await render(<App />);
 
-    await screen.getByRole('textbox', { name: 'Question' }).fill('What is TanStack Start?');
-    await screen.getByRole('button', { name: /Submit Question/ }).click();
+    await screen.getByTestId('question-textarea').fill('What is TanStack Start?');
+    await screen.getByTestId('submit-button').click();
 
-    await expect.element(screen.getByRole('textbox', { name: 'Question' })).toHaveValue('What is TanStack Start?');
+    await expect.element(screen.getByTestId('question-textarea')).toHaveValue('What is TanStack Start?');
     await cleanup();
   });
 });

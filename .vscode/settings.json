@@ -52,6 +52,16 @@
     "/^npx.*/": true,
     "/^timeout.*/": true,
   },
+  // Tanstack Start
+  "files.readonlyInclude": {
+    "**/routeTree.gen.ts": true
+  },
+  "files.watcherExclude": {
+    "**/routeTree.gen.ts": true
+  },
+  "search.exclude": {
+    "**/routeTree.gen.ts": true
+  },
   // JavaScript/TypeScript testing (Vitest)
   "vitest.enable": true,
   "vitest.commandLine": "npm test --",

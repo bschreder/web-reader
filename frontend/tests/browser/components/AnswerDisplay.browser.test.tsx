@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
-import AnswerDisplay from '../../../src/components/AnswerDisplay';
+import AnswerDisplay from '@src/components/AnswerDisplay';
 
 describe('AnswerDisplay (browser)', () => {
   it('renders answer and citations', async () => {

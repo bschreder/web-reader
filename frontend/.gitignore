@@ -1,6 +1,9 @@
 # Project
 coverage/
 *.coverage
+playwright-report/
+test-results/
+__screenshots__/
 
 # Dependencies
 node_modules/
@@ -12,9 +15,6 @@ dist/
 .output/
 .vinxi/
 build/
-coverage/
-playwright-report/
-test-results/
 *.local
 
 # Environment variables

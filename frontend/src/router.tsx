@@ -10,6 +10,7 @@ export function getRouter(): ReturnType<typeof createRouter> {
   return createRouter({
     routeTree,
     defaultErrorComponent: PrettyErrorBoundary,
+    scrollRestoration: true,
   });
 }
 

@@ -4,6 +4,8 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import jsdoc from 'eslint-plugin-jsdoc';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
+import pluginRouter from '@tanstack/eslint-plugin-router';
+import ts from 'typescript';
 
 export default [
   {
@@ -27,6 +29,7 @@ export default [
       jsdoc,
       react,
       'react-hooks': reactHooks,
+      '@tanstack/router': pluginRouter,
       'jsx-a11y': jsxA11y,
     },
     settings: {
@@ -34,8 +37,10 @@ export default [
     },
     rules: {
       // Recommended
+      ...tseslint.configs.recommended,
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+      ...pluginRouter.configs.recommended.rules,
       ...jsxA11y.configs.recommended.rules,
       ...jsdoc.configs['flat/recommended-typescript'].rules,
 

@@ -6,8 +6,6 @@ import tailwindcss from '@tailwindcss/vite';
 import viteReact from '@vitejs/plugin-react';
 import path from 'path';
 
-const isDev = process.env.NODE_ENV === 'development';
-
 export default defineConfig(({ mode }) => {
   // Load env from workspace root (parent directory)
   const env = loadEnv(mode, path.resolve(__dirname, '..'), '');
@@ -18,7 +16,7 @@ export default defineConfig(({ mode }) => {
     'import.meta.env.VITE_WS_URL': JSON.stringify(env.VITE_WS_URL || 'ws://localhost:8000'),
   },
   plugins: [
-    isDev && devtools(),
+    devtools(),
     tsConfigPaths(),
     tanstackStart(),
     viteReact(), // must come after tanstackStart
