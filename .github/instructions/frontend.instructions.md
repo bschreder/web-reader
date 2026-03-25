@@ -1,10 +1,13 @@
---- 
+---
 applyTo: ./frontend/**/*.{ts,tsx}
 description: This file describes the post-change validation steps for Frontend TypeScript/React files.
 ---
+
 # Frontend - Post-Change Validation Instructions
 
 **Scope**: This applies to all TypeScript/React files in `./frontend/**/*.{ts,tsx}`
+
+Verify that all selectable and clickable elements in the UI have appropriate ARIA labels and roles for accessibility and have an associated `data-testid` attribute for testing.
 
 After making any changes or additions to TypeScript/React files in the frontend directory, you **MUST** run the following validation steps in order:
 
@@ -13,13 +16,17 @@ After making any changes or additions to TypeScript/React files in the frontend 
 **Before validating Frontend changes**, check if any changes were made to dependent projects:
 
 ### If Backend was modified:
+
 Frontend depends on Backend (calls Backend API and WebSocket). If Backend files were changed, you **MUST** first execute all steps in `.github/instructions/backend.instructions.md` to ensure Backend is working correctly before proceeding with Frontend validation.
 
 ### If LangChain was modified:
+
 Backend depends on LangChain. If LangChain files were changed, ensure Backend validation is completed (which includes LangChain validation).
 
 ### If FastMCP was modified:
+
 LangChain depends on FastMCP. If FastMCP files were changed, ensure full dependency chain is validated:
+
 1. `.github/instructions/fastmcp.instructions.md`
 2. `.github/instructions/langchain.instructions.md`
 3. `.github/instructions/backend.instructions.md`
@@ -27,6 +34,7 @@ LangChain depends on FastMCP. If FastMCP files were changed, ensure full depende
 Then proceed with Frontend validation.
 
 ### Dependency Chain:
+
 ```
 FastMCP (MCP tools) → LangChain (orchestration) → Backend (API) → Frontend
 ```
@@ -46,16 +54,10 @@ cd ./frontend
 Run ESLint to check for code style and quality issues:
 
 ```bash
-npm run lint
-```
-
-If errors are found, attempt to auto-fix them:
-
-```bash
 npm run lint:fix
 ```
 
-If there are remaining errors that cannot be auto-fixed, manually correct them before proceeding.
+If errors are found, correct them before proceeding.
 
 ## 3. Run TypeScript Type Checker
 
@@ -105,7 +107,7 @@ Run the complete test suite with coverage reporting:
 npm run test:coverage
 ```
 
-Verify that code coverage meets the required thresholds. Fix any coverage gaps as necessary before proceeding.
+Verify that all tests pass and code coverage meets the required thresholds. Fix any coverage gaps as necessary before proceeding.
 
 ## 8. Build the Application
 
@@ -126,6 +128,7 @@ npm run dev
 ```
 
 The dev server should start without errors. In the console output, verify:
+
 - Vite dev server is running on `http://localhost:3000`
 - No connection errors to Backend API
 - WebSocket connection attempts are visible in the logs
@@ -171,18 +174,21 @@ npm run dev
 ## Common Issues and Solutions
 
 ### ESLint Errors
+
 - Import order issues: Let eslint auto-fix with `--fix`
 - Line length: Consider refactoring long lines for readability
 - Unused variables: Remove them or prefix with `_` if intentional
 - React hooks: Ensure all dependencies are in dependency arrays
 
 ### TypeScript Errors
+
 - Type mismatches: Check against Backend API response types
 - Missing type definitions: Import types from `src/types/`
 - Schema validation: Ensure Zod schemas match Backend Pydantic models
 - Component props: Verify prop types match usage
 
 ### Test Failures
+
 - API connection: Ensure Backend service is running on port 8000
 - WebSocket issues: Check WebSocket URL configuration
 - Component rendering: Verify component state and props
@@ -190,13 +196,15 @@ npm run dev
 - Timeouts: Increase timeout if tests are flaky
 
 ### Build Failures
+
 - Dependency conflicts: Check package.json for version constraints
 - Missing dependencies: Run `npm install` to ensure all deps are installed
 - TypeScript errors: Run `npm run typecheck` to identify issues
 - Asset loading: Verify all imported assets exist
 
 ### Dev Server Issues
-- Port conflicts: Ensure port 3000  is available
+
+- Port conflicts: Ensure port 3000 is available
 - Backend connection: Verify Backend is running and accessible
 - WebSocket URL: Check configuration in `src/lib/config.ts`
 - Module resolution: Clear `.tanstack/tmp` directory if caching issues occur
@@ -213,6 +221,7 @@ Frontend depends on and is depended upon by:
 - **TanStack Query**: Server state management and caching
 
 ### Critical Integration Flow:
+
 1. **Frontend** renders TaskForm component
 2. User submits task via form
 3. **Frontend** validates with Zod schema
@@ -227,6 +236,7 @@ Always test the complete integration flow with Backend running.
 ## Frontend-Specific Validation
 
 ### Component Testing
+
 - Test TaskForm component with various inputs
 - Verify TaskHistory displays task list correctly
 - Test TaskDetail component with streaming updates
@@ -234,12 +244,14 @@ Always test the complete integration flow with Backend running.
 - Test error handling and user feedback
 
 ### State Management
+
 - Verify TanStack Query caching works correctly
 - Check component state management with React hooks
 - Validate WebSocket state during reconnection
 - Test task history persistence
 
 ### API Client Integration
+
 - Test API endpoints match Backend routes
 - Verify request/response serialization
 - Check error handling and retry logic
@@ -247,18 +259,21 @@ Always test the complete integration flow with Backend running.
 - Test request cancellation on unmount
 
 ### Schema Validation (Zod)
+
 - Test TaskRequest schema validates correctly
 - Verify TaskResponse schema matches Backend model
 - Check validation error messages
 - Validate form validation before submission
 
 ### TypeScript Types
+
 - Ensure task types match Backend models
 - Verify type safety throughout components
 - Check API response types
 - Validate form field types
 
 ### Real-Time Communication
+
 - Test WebSocket connection establishment
 - Verify streaming events display in real-time
 - Test connection error handling and recovery
@@ -266,6 +281,7 @@ Always test the complete integration flow with Backend running.
 - Check memory leaks on connection cleanup
 
 ### Responsive UI
+
 - Test layout on various screen sizes
 - Verify form accessibility
 - Test keyboard navigation
@@ -273,6 +289,7 @@ Always test the complete integration flow with Backend running.
 - Validate touch interactions on mobile
 
 ### Performance
+
 - Check bundle size after build
 - Verify lazy loading works correctly
 - Test large task history scrolling

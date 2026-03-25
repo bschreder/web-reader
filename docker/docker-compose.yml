@@ -54,7 +54,6 @@ services:
       - DEFAULT_TIMEOUT=${DEFAULT_TIMEOUT:-120}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_TARGET=${LOG_TARGET:-console}
-      - LOG_FILE=${LOG_FILE:-logs/backend.log}
     env_file:
       - ../.env
     depends_on:
@@ -92,7 +91,6 @@ services:
       - TIME_BUDGET=${TIME_BUDGET:-120}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_TARGET=${LOG_TARGET:-console}
-      - LOG_FILE=${LOG_FILE:-logs/langchain.log}
     env_file:
       - ../.env
     depends_on:
@@ -132,7 +130,6 @@ services:
       - RESPECT_ROBOTS_TXT=${RESPECT_ROBOTS_TXT:-true}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_TARGET=${LOG_TARGET:-console}
-      - LOG_FILE=${LOG_FILE:-logs/fastmcp.log}
     env_file:
       - ../.env
     networks:

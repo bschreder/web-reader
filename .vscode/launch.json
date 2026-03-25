@@ -5,8 +5,15 @@
       "name": "Attach Backend (debugpy)",
       "type": "debugpy",
       "request": "attach",
-      "connect": { "host": "localhost", "port": 5671 },
-      "justMyCode": true
+      // "connect": { "host": "localhost", "port": 5671 },
+      "connect": { "host": "backend", "port": 5671 },
+      "justMyCode": false,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "/app"
+        }
+      ]
     },
     {
       "name": "Attach LangChain (debugpy)",

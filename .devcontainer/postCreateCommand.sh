@@ -22,7 +22,7 @@ if [ -d "/workspaces/web-reader/frontend" ]; then
   
   # Install fresh dependencies
   npm --prefix /workspaces/web-reader/frontend install --loglevel=warn
-  npx --prefix /workspaces/web-reader/frontend playwright install chromium --with-deps || true
+  npx --prefix /workspaces/web-reader/frontend playwright install --with-deps chromium
 fi
 
 # Install Python dependencies for all services using Poetry

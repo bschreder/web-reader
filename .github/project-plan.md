@@ -22,37 +22,37 @@ This document outlines the phased implementation plan for building the Web Reade
 
 #### Docker & Compose Infrastructure
 
-- [ ] Create production compose file: `docker/docker-compose.yml`
-- [ ] Create development compose overlay: `docker/docker-compose.dev.yml`
-  - [ ] Use `build.target: dev` for each service in dev mode
-  - [ ] Add source & test volume mounts (e.g. `../backend/src:/app/src:rw`)
-  - [ ] Add debug ports (backend 5671, langchain 5672, fastmcp 5673, frontend 9229 optional)
-  - [ ] Add watcher/HMR commands overrides (watchfiles / uvicorn --reload / npm run dev)
-- [ ] Configure bridge network for inter-container communication
-- [ ] Set up volume mounts for data persistence (both modes):
-  - [ ] Ollama models (`ollama-data`)
-  - [ ] Configuration files (`./config`)
-  - [ ] Task artifacts (`./data`)
-- [ ] Add health checks for all containers
-- [ ] Single shared environment file at repo root (`.env`) used by all services
-- [ ] Provide `.env.example` with all required variables
-- [ ] Document dev vs prod volume strategy:
+- [x] Create production compose file: `docker/docker-compose.yml`
+- [x] Create development compose overlay: `docker/docker-compose.dev.yml`
+  - [x] Use `build.target: dev` for each service in dev mode
+  - [x] Add source & test volume mounts (e.g. `../backend/src:/app/src:rw`)
+  - [x] Add debug ports (backend 5671, langchain 5672, fastmcp 5673, frontend 9229 optional)
+  - [x] Add watcher/HMR commands overrides (watchfiles / uvicorn --reload / npm run dev)
+- [x] Configure bridge network for inter-container communication
+- [x] Set up volume mounts for data persistence (both modes):
+  - [x] Ollama models (`ollama-data`)
+  - [x] Configuration files (`./config`)
+  - [x] Task artifacts (`./data`)
+- [x] Add health checks for all containers
+- [x] Single shared environment file at repo root (`.env`) used by all services
+- [x] Provide `.env.example` with all required variables
+- [x] Document dev vs prod volume strategy:
   - **Dev**: Source + tests mounted (fast iteration, hot reload)
   - **Prod**: Code copied into image (immutable, smaller surface)
-- [ ] Test stack: `docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d`
+- [x] Test stack: `docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d`
 
 #### Multistage Dockerfile Requirements
 
 For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
 
-- [ ] Stage `base`: runtime (Python 3.13 slim / Node 24 alpine), system deps, non-root user
-- [ ] Stage `dev`: install dev dependencies (pytest, pytest-cov, watchfiles, debugpy / vite, vitest, playwright) via Poetry for Python services and npm for frontend, set env (`ENVIRONMENT=development`), expose debug ports, entrypoint uses watcher/HMR
-- [ ] Stage `prod`: install production deps only (Poetry groups `main`/`test`/`debug` as appropriate for Python services), copy source, drop build caches, non-root execution, healthcheck friendly CMD
-- [ ] Verify images build with: `docker build --target dev` and `docker build --target prod`
+- [x] Stage `base`: runtime (Python 3.13 slim / Node 24 alpine), system deps, non-root user
+- [x] Stage `dev`: install dev dependencies (pytest, pytest-cov, watchfiles, debugpy / vite, vitest, playwright) via Poetry for Python services and npm for frontend, set env (`ENVIRONMENT=development`), expose debug ports, entrypoint uses watcher/HMR
+- [x] Stage `prod`: install production deps only (Poetry groups `main`/`test`/`debug` as appropriate for Python services), copy source, drop build caches, non-root execution, healthcheck friendly CMD
+- [x] Verify images build with: `docker build --target dev` and `docker build --target prod`
 
 #### Project Structure
 
-- [ ] Initialize monorepo structure:
+- [x] Initialize monorepo structure:
   ```
   web-reader/
   ├── .github/
@@ -75,29 +75,29 @@ For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
   │   └── Dockerfile
   └── README.md
   ```
-- [ ] Initialize Git repository with `.gitignore`
-- [ ] Create `README.md` with quick start instructions
+- [x] Initialize Git repository with `.gitignore`
+- [x] Create `README.md` with quick start instructions
 
 #### Dev Environment (No local Node/Python)
 
-- [ ] Add VS Code Dev Container configuration (`.devcontainer`)
-- [ ] Base image with Python 3.13 and Node.js 24 preinstalled
-- [ ] Enable Docker-outside-of-Docker feature to manage external containers (Playwright, Ollama)
-- [ ] Verify devcontainer can run `docker compose` against `container/docker-compose.yml`
+- [x] Add VS Code Dev Container configuration (`.devcontainer`)
+- [x] Base image with Python 3.13 and Node.js 24 preinstalled
+- [x] Enable Docker-outside-of-Docker feature to manage external containers (Playwright, Ollama)
+- [x] Verify devcontainer can run `docker compose` against `container/docker-compose.yml`
 
 #### Configuration & Environment Files
 
-- [ ] Create `config/allowed-domains.txt` (initially empty)
-- [ ] Create `config/disallowed-domains.txt` with common blocklists
-- [ ] Create `.env.example` with all required environment variables
-- [ ] Document configuration options in README
+- [x] Create `config/allowed-domains.txt` (initially empty)
+- [x] Create `config/disallowed-domains.txt` with common blocklists
+- [x] Create `.env.example` with all required environment variables
+- [x] Document configuration options in README
 
 #### Testing Infrastructure (Foundational Definitions Only)
 
-- [ ] Adopt test layout per project: `tests/unit`, `tests/integration`, `tests/e2e`
-- [ ] Document test execution via devcontainer shell
-- [ ] Add coverage tooling (pytest-cov / vitest + c8) to dev stage dependencies
-- [ ] Minimum coverage thresholds documented (>80% statement, branch, and function)
+- [x] Adopt test layout per project: `tests/unit`, `tests/integration`, `tests/e2e`
+- [x] Document test execution via devcontainer shell
+- [x] Add coverage tooling (pytest-cov / vitest + c8) to dev stage dependencies
+- [x] Minimum coverage thresholds documented (>80% statement, branch, and function)
 
 ### Deliverables
 
@@ -122,63 +122,63 @@ For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
 
 #### FastMCP Server Setup
 
-- [ ] Initialize Python project with `pyproject.toml`
-- [ ] Install dependencies: `fastmcp`, `playwright`, `asyncio`
-- [ ] Create server entry point (`server.py`)
-- [ ] Implement browser instance management (singleton pattern)
-- [ ] Add rate limiting infrastructure (per-domain tracking)
-- [ ] Implement domain filtering (load from config files)
-- [ ] Configure logging via Loguru using `.env` (`LOG_LEVEL`, `LOG_TARGET`, `LOG_FILE`)
+- [x] Initialize Python project with `pyproject.toml`
+- [x] Install dependencies: `fastmcp`, `playwright`, `asyncio`
+- [x] Create server entry point (`server.py`)
+- [x] Implement browser instance management (singleton pattern)
+- [x] Add rate limiting infrastructure (per-domain tracking)
+- [x] Implement domain filtering (load from config files)
+- [x] Configure logging via Loguru using `.env` (`LOG_LEVEL`, `LOG_TARGET`, `LOG_FILE`)
 
 #### Core Browser Tools
 
-- [ ] `navigate_to(url, wait_until)` - with error handling for 404, 403, 429
-- [ ] `get_page_content()` - extract title, text, links, metadata
-  - [ ] Return clean, truncated text (≤10k chars) and disclosure flag when truncated
-- [ ] `extract_structured_data(schema)` - basic schema-based extraction
-- [ ] `take_screenshot(full_page)` - capture and return base64 image
-- [ ] `get_page_structure()` - return DOM structure for LLM understanding
+- [x] `navigate_to(url, wait_until)` - with error handling for 404, 403, 429
+- [x] `get_page_content()` - extract title, text, links, metadata
+  - [x] Return clean, truncated text (≤10k chars) and disclosure flag when truncated
+- [x] `extract_structured_data(schema)` - basic schema-based extraction
+- [x] `take_screenshot(full_page)` - capture and return base64 image
+- [x] `get_page_structure()` - return DOM structure for LLM understanding
 
 #### Rate Limiting and Bot Protection
 
-- [ ] Implement 5 requests per 90 seconds per domain
-- [ ] Add randomized 10-20 second delays between requests
-- [ ] Handle 429 responses with exponential backoff
-- [ ] Rotate user agents from pool (10+ variants)
-- [ ] Randomize viewport dimensions
+- [x] Implement 5 requests per 90 seconds per domain
+- [x] Add randomized 10-20 second delays between requests
+- [x] Handle 429 responses with exponential backoff
+- [x] Rotate user agents from pool (10+ variants)
+- [x] Randomize viewport dimensions
 
 #### Domain Filtering
 
-- [ ] Load allow/deny lists from config files at startup
-- [ ] Implement wildcard matching (`*.example.com`)
-- [ ] Check domain before each navigation
-- [ ] robots.txt parsing and compliance (optional feature)
+- [x] Load allow/deny lists from config files at startup
+- [x] Implement wildcard matching (`*.example.com`)
+- [x] Check domain before each navigation
+- [x] robots.txt parsing and compliance (optional feature)
 
 #### Testing (FastMCP)
 
 Directory layout: `fastmcp/tests/{unit,integration,e2e}`
 
-- [ ] Unit tests for rate limiting logic
-- [ ] Unit tests for domain filtering
-- [ ] Integration tests with live Playwright container
-- [ ] Test error handling (404, timeout, network errors)
-- [ ] Verify logging to console and file (based on `.env`)
+- [x] Unit tests for rate limiting logic
+- [x] Unit tests for domain filtering
+- [x] Integration tests with live Playwright container
+- [x] Test error handling (404, timeout, network errors)
+- [x] Verify logging to console and file (based on `.env`)
 
 Unit (>80% coverage):
 
-- [ ] `tests/unit/test_rate_limiting.py`
-- [ ] `tests/unit/test_domain_filtering.py`
-- [ ] `tests/unit/test_browser_management.py`
-- [ ] `tests/unit/test_tools.py`
+- [x] `tests/unit/test_rate_limiting.py`
+- [x] `tests/unit/test_domain_filtering.py`
+- [x] `tests/unit/test_browser_management.py`
+- [x] `tests/unit/test_tools.py`
 
 Integration (mock external pieces except Playwright container):
 
-- [ ] `tests/integration/test_playwright_integration.py`
-- [ ] `tests/integration/test_tool_execution.py`
+- [x] `tests/integration/test_playwright_integration.py`
+- [x] `tests/integration/test_tool_execution.py`
 
 E2E (live Playwright + real navigation):
 
-- [ ] `tests/e2e/test_full_workflow.py`
+- [x] `tests/e2e/test_full_workflow.py`
 
 Devcontainer (preferred):
 
@@ -218,61 +218,61 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 
 #### FastAPI Server Setup
 
-- [ ] Initialize FastAPI project with `pyproject.toml`
-- [ ] Install dependencies: `fastapi`, `uvicorn`, `websockets`, `pydantic`
-- [ ] Create API router structure
-- [ ] Configure permissive CORS for local development (tighten in production phase)
-- [ ] Add request validation with Pydantic models
-- [ ] Configure logging via Loguru using `.env`
+- [x] Initialize FastAPI project with `pyproject.toml`
+- [x] Install dependencies: `fastapi`, `uvicorn`, `websockets`, `pydantic`
+- [x] Create API router structure
+- [x] Configure permissive CORS for local development (tighten in production phase)
+- [x] Add request validation with Pydantic models
+- [x] Configure logging via Loguru using `.env`
 
 #### REST API Endpoints
 
-- [ ] POST `/api/tasks` - Create new research task
-  - [ ] Validate question (max 1000 chars)
-  - [ ] Validate seed URL format (if provided)
-  - [ ] Generate unique task ID (UUID)
-  - [ ] Add to task queue
-- [ ] GET `/api/tasks/{id}` - Get task status and results
-- [ ] DELETE `/api/tasks/{id}` - Cancel running task
-- [ ] GET `/api/history` - List all tasks with filters
+- [x] POST `/api/tasks` - Create new research task
+  - [x] Validate question (max 1000 chars)
+  - [x] Validate seed URL format (if provided)
+  - [x] Generate unique task ID (UUID)
+  - [x] Add to task queue
+- [x] GET `/api/tasks/{id}` - Get task status and results
+- [x] DELETE `/api/tasks/{id}` - Cancel running task
+- [x] GET `/api/history` - List all tasks with filters
 
 #### WebSocket Streaming
 
-- [ ] WebSocket endpoint: `/api/tasks/{id}/stream`
-- [ ] Accept connections and validate task ID
-- [ ] Stream agent events in real-time
-- [ ] Handle disconnections gracefully
-- [ ] Implement reconnection logic
+- [x] WebSocket endpoint: `/api/tasks/{id}/stream`
+- [x] Accept connections and validate task ID
+- [x] Stream agent events in real-time
+- [x] Handle disconnections gracefully
+- [x] Implement reconnection logic
 
 #### Task Queue Management
 
-- [ ] In-memory task storage (dict-based, replace with DB later)
-- [ ] Task lifecycle states: queued → running → completed/failed/cancelled
-- [ ] Concurrency limit enforcement (max 5 simultaneous tasks)
-- [ ] Fair scheduling (FIFO queue)
-- [ ] Task timeout enforcement (default 120 seconds)
+- [x] In-memory task storage (dict-based, replace with DB later)
+- [x] Task lifecycle states: queued → running → completed/failed/cancelled
+- [x] Concurrency limit enforcement (max 5 simultaneous tasks)
+- [x] Fair scheduling (FIFO queue)
+- [x] Task timeout enforcement (default 120 seconds)
 
 #### Task Artifacts
 
-- [ ] Store full conversation history
-- [ ] Save navigation timeline (URLs, timestamps, HTTP statuses)
-- [ ] Persist screenshots (filesystem)
-- [ ] Record final answer with citations
-- [ ] Log errors and recovery attempts
+- [x] Store full conversation history
+- [x] Save navigation timeline (URLs, timestamps, HTTP statuses)
+- [x] Persist screenshots (filesystem)
+- [x] Record final answer with citations
+- [x] Log errors and recovery attempts
 
 #### Persistence Strategy (MVP)
 
-- [ ] Filesystem-based artifact store (JSON and images per task directory)
-- [ ] No database required in MVP; add DB integration in future phase
+- [x] Filesystem-based artifact store (JSON and images per task directory)
+- [x] No database required in MVP; add DB integration in future phase
 
 #### Testing (Backend)
 
 Directory layout: `backend/tests/{unit,integration,e2e}`
 
-- [ ] Unit tests for API endpoints
-- [ ] Integration tests for WebSocket streaming
-- [ ] Load testing for concurrent task handling
-- [ ] Test timeout and cancellation logic
+- [x] Unit tests for API endpoints
+- [x] Integration tests for WebSocket streaming
+- [x] Load testing for concurrent task handling
+- [x] Test timeout and cancellation logic
 
 Unit (>80% coverage): models, task queue, artifacts
 Integration: REST + WebSocket with mocked LangChain / FastMCP
@@ -316,60 +316,60 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 
 #### LangChain Setup
 
-- [ ] Initialize Python project with LangChain dependencies
-- [ ] Install: `langchain`, `langchain-community`, `langchain-ollama`
-- [ ] Configure ChatOllama client (connect to Ollama container)
-- [ ] Set model parameters (qwen3:8b, temperature=0.1)
-- [ ] Read all config from `.env` (Ollama host/port/model, limits)
+- [x] Initialize Python project with LangChain dependencies
+- [x] Install: `langchain`, `langchain-community`, `langchain-ollama`
+- [x] Configure ChatOllama client (connect to Ollama container)
+- [x] Set model parameters (qwen3:8b, temperature=0.1)
+- [x] Read all config from `.env` (Ollama host/port/model, limits)
 
 #### MCP Tool Integration
 
-- [ ] Create MCP client wrapper for FastMCP server
-- [ ] Wrap MCP tools as LangChain `StructuredTool` instances
-- [ ] Define tool schemas with Pydantic
-- [ ] Add tool descriptions for LLM understanding
+- [x] Create MCP client wrapper for FastMCP server
+- [x] Wrap MCP tools as LangChain `StructuredTool` instances
+- [x] Define tool schemas with Pydantic
+- [x] Add tool descriptions for LLM understanding
 
 #### Agent Configuration
 
-- [ ] Implement ReAct agent pattern
-- [ ] Configure ConversationBufferMemory
-- [ ] Set max iterations (15)
-- [ ] Add early stopping logic
-- [ ] Create system prompt for research tasks
-  - [ ] Include link prioritization guidance (authority domains, relevant anchors, max N links/page)
+- [x] Implement ReAct agent pattern
+- [x] Configure ConversationBufferMemory
+- [x] Set max iterations (15)
+- [x] Add early stopping logic
+- [x] Create system prompt for research tasks
+  - [x] Include link prioritization guidance (authority domains, relevant anchors, max N links/page)
 
 #### Callback Handler
 
-- [ ] Implement custom WebSocket callback handler
-- [ ] Stream events: thinking, tool_call, tool_result, complete, error
-- [ ] Add timing information to events
-- [ ] Handle callback errors gracefully
+- [x] Implement custom WebSocket callback handler
+- [x] Stream events: thinking, tool_call, tool_result, complete, error
+- [x] Add timing information to events
+- [x] Handle callback errors gracefully
 
 #### Prompt Engineering
 
-- [ ] System prompt defining research guidelines
-- [ ] Few-shot examples for common scenarios:
-- [ ] Web search workflow
-- [ ] Seed URL navigation
-- [ ] Multi-page synthesis
-- [ ] Error recovery instructions
-- [ ] State awareness guidelines
+- [x] System prompt defining research guidelines
+- [x] Few-shot examples for common scenarios:
+- [x] Web search workflow
+- [x] Seed URL navigation
+- [x] Multi-page synthesis
+- [x] Error recovery instructions
+- [x] State awareness guidelines
 
 #### Error Handling
 
-- [ ] Retry logic with exponential backoff
-- [ ] Graceful degradation to partial results
-- [ ] Structured error reporting
-- [ ] Recovery suggestions for common errors
+- [x] Retry logic with exponential backoff
+- [x] Graceful degradation to partial results
+- [x] Structured error reporting
+- [x] Recovery suggestions for common errors
 
 #### Testing (LangChain)
 
 Directory layout: `langchain/tests/{unit,integration,e2e}`
 
-- [ ] Unit tests for tool wrappers
-- [ ] Integration tests with mock MCP server
-- [ ] End-to-end tests with live Ollama
-- [ ] Test error recovery scenarios
+- [x] Unit tests for tool wrappers
+- [x] Integration tests with mock MCP server
+- [x] End-to-end tests with live Ollama
+- [x] Test error recovery scenarios
 
 Unit: tool wrappers, MCP client, agent config, callbacks
 Integration: agent execution with mocked LLM / simulated MCP
@@ -413,67 +413,84 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 
 #### TanStack Start Setup
 
-- [ ] Initialize TanStack Start SPA/SSR project with TypeScript using [Build from scratch](https://tanstack.com/start/latest/docs/framework/react/build-from-scratch)
-- [ ] Install dependencies: `@tanstack/start`, `@tanstack/react-router`, `@tanstack/react-query`
-- [ ] Install devtools: `@tanstack/react-devtools`, `@tanstack/react-router-devtools`, `@tanstack/react-query-devtools`, `@tanstack/devtools-vite`
-- [ ] Configure build and development scripts
-- [ ] Set up Tailwind v4 CSS or preferred styling solution
-- [ ] Configure logging via Pino with Pretty in dev and file output when enabled in `.env`
-- [ ] Use ESLint v9 with flat configuration
-- [ ] Use the latest releases of all packages
-- [ ] Verify that all files pass ESLint and Vitest with code coverage > 80%
+- [x] Initialize TanStack Start SSR project with TypeScript using [Build from scratch](https://tanstack.com/start/latest/docs/framework/react/build-from-scratch)
+- [x] Install dependencies: `@tanstack/start`, `@tanstack/react-router`, `@tanstack/react-query`
+- [x] Install devtools: `@tanstack/react-devtools`, `@tanstack/react-router-devtools`, `@tanstack/react-query-devtools`, `@tanstack/devtools-vite`
+- [x] Configure build and development scripts
+- [x] Set up Tailwind v4 CSS or preferred styling solution
+- [x] Configure logging via Pino with Pretty in dev and file output when enabled in `.env`
+- [x] Use ESLint v9 with flat configuration
+- [x] Use the latest releases of all packages
+- [x] Verify that all files pass ESLint and Vitest with code coverage > 80%
+
+#### Node.js Server Logging Configuration
+
+- [x] Install `pino` and `pino-pretty` dependencies for structured logging
+- [x] Create `src/lib/logger.ts` module with:
+  - [x] Read `LOG_LEVEL` and `LOG_TARGET` from `.env` (defaults: info, console)
+  - [x] Configure Pino with Pretty transport in development
+  - [x] Support file logging when `LOG_TARGET=file` or `LOG_TARGET=both`
+  - [x] Implement log file rotation (daily, in `logs/` directory with pattern `log-frontend-YYYYMMDD.json`)
+  - [x] Export configured logger instance
+- [x] Integrate logger into `src/entries/server.tsx`:
+  - [x] Add Pino HTTP logger middleware for request/response logging
+  - [x] Log server startup and shutdown events
+  - [x] Capture route loader errors with logger instead of console
+  - [x] Include request context (task ID, route) in logs where applicable
+- [x] Log format: Structured JSON in files, Pretty-printed in console with colors and timestamps
+- [x] Verify logging works with `.env` values: `LOG_LEVEL=debug` and `LOG_TARGET=both`
 
 #### Core Components
 
-- [ ] `TaskForm` - Question input and options
-  - [ ] Question textarea (required)
-  - [ ] Seed URL input (optional)
-  - [ ] Advanced options accordion (depth, pages, time budget)
-  - [ ] Submit button with loading state
-- [ ] `TaskDetail` - Live task monitoring
-  - [ ] Activity log with auto-scroll
-  - [ ] Live screenshot display
-  - [ ] Progress indicators
-  - [ ] Cancel button
-- [ ] `AnswerDisplay` - Show results with citations
-  - [ ] Answer text with formatting
-  - [ ] Citation list with links
-  - [ ] Confidence score display
-  - [ ] Export button (markdown/JSON)
-- [ ] `TaskHistory` - List past tasks
-  - [ ] Table with filters (status, date)
-  - [ ] Search by question text
-  - [ ] Link to task details
-  - [ ] Delete button
+- [x] `TaskForm` - Question input and options
+  - [x] Question textarea (required)
+  - [x] Seed URL input (optional)
+  - [x] Advanced options accordion (depth, pages, time budget)
+  - [x] Submit button with loading state
+- [x] `TaskDetail` - Live task monitoring
+  - [x] Activity log with auto-scroll
+  - [x] Live screenshot display
+  - [x] Progress indicators
+  - [x] Cancel button
+- [x] `AnswerDisplay` - Show results with citations
+  - [x] Answer text with formatting
+  - [x] Citation list with links
+  - [x] Confidence score display
+  - [x] Export button (markdown/JSON)
+- [x] `TaskHistory` - List past tasks
+  - [x] Table with filters (status, date)
+  - [x] Search by question text
+  - [x] Link to task details
+  - [x] Delete button
 
 #### API Client
 
-- [ ] TypeScript API client with type safety
-- [ ] REST methods: createTask, getTask, cancelTask, listTasks
-- [ ] WebSocket connection manager with reconnection
-- [ ] Event type definitions
+- [x] TypeScript API client with type safety
+- [x] REST methods: createTask, getTask, cancelTask, listTasks
+- [x] WebSocket connection manager with reconnection
+- [x] Event type definitions
 
 #### Real-time Updates
 
-- [ ] WebSocket connection per task
-- [ ] Event handler for agent events
-- [ ] Automatic reconnection on disconnect
-- [ ] Message buffering during reconnection
+- [x] WebSocket connection per task
+- [x] Event handler for agent events
+- [x] Automatic reconnection on disconnect
+- [x] Message buffering during reconnection
 
 #### Routing
 
-- [ ] Home page (`/`) - Task submission form
-- [ ] Task detail page (`/tasks/:id`) - Live monitoring
-- [ ] History page (`/history`) - Past tasks
+- [x] Home page (`/`) - Task submission form
+- [x] Task detail page (`/tasks/:id`) - Live monitoring
+- [x] History page (`/history`) - Past tasks
 
 #### Testing (Frontend)
 
 Directory layout: `frontend/tests/{unit,integration,e2e,browser}`
 
-- [ ] Component unit tests (Vitest)
-- [ ] E2E tests with Playwright
-- [ ] Test WebSocket reconnection logic
-- [ ] Test form validation
+- [x] Component unit tests (Vitest)
+- [x] E2E tests with Playwright
+- [x] Test WebSocket reconnection logic
+- [x] Test form validation
 
 Unit: API client, WebSocket logic
 Browser (Vitest browser mode): interactive components
@@ -497,10 +514,10 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 
 #### Docker Image
 
-- [ ] Create `Dockerfile` for production build
-- [ ] Multi-stage build (build + serve)
-- [ ] Optimize image size (alpine base)
-- [ ] Configure for Docker Compose
+- [x] Create `Dockerfile` for production build
+- [x] Multi-stage build (build + serve)
+- [x] Optimize image size (alpine base)
+- [x] Configure for Docker Compose
 
 ### Deliverables
 
@@ -944,7 +961,6 @@ Each phase must meet these criteria before moving to the next:
 2. **Bot Detection**: Sites may block automated browsing
    - _Mitigation_: Robust rate limiting, human-like behaviors, graceful degradation
 3. **Performance**: Research tasks may exceed time budgets
-
    - _Mitigation_: Timeouts, partial results, optimization
 
 4. **Ollama Resource Usage**: LLM inference may be slow on CPU

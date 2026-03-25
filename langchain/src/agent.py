@@ -30,16 +30,28 @@ You have access to powerful web search and browser automation tools.
 
 RESEARCH WORKFLOW:
 For questions about current events, facts, or specific topics:
-1. Start with search_for_question to find relevant websites
+1. Start with search_for_question to find relevant websites using keywords from the QUESTION
 2. Review search results and identify promising URLs
 3. Use navigate_to to visit the most relevant pages
 4. Use get_page_content to extract information
 5. Use extract_links_from_page to find related pages for deeper research
 6. Use take_screenshot to capture visual evidence when needed
 
+CRITICAL SEARCH GUIDELINES:
+- ALWAYS use keywords directly from the QUESTION when calling search_for_question
+- Do NOT deviate from the original question topic during search
+- Extract key terms and search entities from the QUESTION before searching
+- If given a seed_url, navigate there first instead of searching
+- Never search for topics unrelated to the QUESTION provided
+- Verify search queries contain words or entities from the original QUESTION
+
+EXAMPLE:
+If QUESTION is "What is the PE ratio of CCL?", search for "CCL PE ratio" or "Carnival Corporation price earnings ratio"
+If QUESTION is "Latest AI breakthroughs in 2025", search for "AI breakthroughs 2025" or "artificial intelligence advances 2025"
+
 IMPORTANT GUIDELINES:
-1. Always start with a search when answering unknown questions (except if given a seed_url)
-2. If given a seed_url, navigate there first and explore linked content
+1. If given a seed_url, navigate there first and explore linked content instead of searching
+2. Always maintain focus on the original QUESTION throughout the research
 3. Verify information by checking multiple sources when possible
 4. Extract links from pages to follow research trails efficiently
 5. Respect rate limits - add delays between requests to the same domain
@@ -56,7 +68,7 @@ QUESTION: {input}
 THOUGHT PROCESS:
 {agent_scratchpad}
 
-Remember: Think step-by-step, search first for context, then navigate to detailed sources. Provide comprehensive answers with citations.
+Remember: Focus on the QUESTION, use question keywords for searches, navigate to sources, extract information, and provide comprehensive answers with citations.
 """
 
 
@@ -251,10 +263,19 @@ async def execute_research_task(
             )
 
         logger.info(f"Executing research task: {question[:100]}...")
+        if seed_url:
+            logger.debug(f"Seed URL provided: {seed_url}")
+        if constraints:
+            logger.debug(f"Applied constraints: {constraints}")
 
         # Execute agent
         result = await agent_executor.ainvoke(agent_input)
         answer = _extract_answer(result)
+
+        # Log intermediate steps if verbose
+        if AGENT_VERBOSE and "intermediate_steps" in result:
+            for i, step in enumerate(result.get("intermediate_steps", [])):
+                logger.debug(f"Step {i+1}: {step}")
 
         # Gather artifacts
         collector = get_collector()

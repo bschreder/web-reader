@@ -12,7 +12,7 @@ from typing import Any, Optional
 from loguru import logger
 
 from .config import MAX_CONCURRENT_TASKS, TASK_TIMEOUT
-from .models import TaskStatus
+from .models import TaskStatus, Citation
 
 # ============================================================================
 # Global State
@@ -64,7 +64,7 @@ class Task:
         self.completed_at: Optional[datetime] = None
 
         self.answer: Optional[str] = None
-        self.citations: list[dict[str, Any]] = []
+        self.citations: list[Citation] = []
         self.screenshots: list[str] = []
         self.error: Optional[str] = None
         self.metadata: dict[str, Any] = {}
@@ -93,7 +93,7 @@ class Task:
             else None,
             "duration": self.duration,
             "answer": self.answer,
-            "citations": self.citations,
+            "citations": [c.model_dump() for c in self.citations],
             "screenshots": self.screenshots,
             "error": self.error,
             "metadata": self.metadata,
@@ -130,7 +130,8 @@ async def create_task(
     seed_url: Optional[str] = None,
     max_depth: int = 3,
     max_pages: int = 20,
-    time_budget: int = 120,
+    # time_budget: int = 120,
+    time_budget: int = 600,
     search_engine: str = "duckduckgo",
     max_results: int = 10,
     safe_mode: bool = True,

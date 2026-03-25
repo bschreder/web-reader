@@ -168,8 +168,16 @@ async def get_page_content_wrapper(mcp_client: MCPClient) -> str:
                     page_url, title=title, source="get_page_content"
                 )
             for link in links[:10]:  # cap to avoid excessive growth
+                # Extract link text if available, otherwise use URL
+                link_text = (
+                    link.get("text", "") if isinstance(link, dict) else "Linked page"
+                )
+                link_url = link.get("href", link) if isinstance(link, dict) else link
                 get_collector().add_citation(
-                    link, source="get_page_content", parent=page_url
+                    link_url,
+                    title=link_text or "Linked page",
+                    source="get_page_content",
+                    parent=page_url,
                 )
         except Exception:
             logger.debug("Failed to record content citations in collector")

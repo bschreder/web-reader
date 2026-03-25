@@ -12,13 +12,13 @@ describe('API client', () => {
     vi.restoreAllMocks();
   });
 
-  it('createTask returns id', async () => {
+  it('createTask returns taskId', async () => {
     (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ id: '123' } as Record<string, unknown>),
+      json: () => Promise.resolve({ taskId: '123', status: 'created', question: 'q', createdAt: new Date().toISOString() } as Record<string, unknown>),
     });
     const res = await createTask({ question: 'q' });
-    expect(res.id).toBe('123');
+    expect(res.taskId).toBe('123');
   });
 
   it('getTask throws on error', async () => {

@@ -110,6 +110,17 @@ class LangChainClient:
             response.raise_for_status()
             result = response.json()
 
+            # Check if LangChain returned an error response
+            if result.get("status") == "error":
+                error_msg = result.get("error", "Unknown error from LangChain")
+                logger.error(
+                    f"Task {task.task_id} failed at LangChain orchestrator: {error_msg}"
+                )
+                logger.debug(f"Full error response: {result}")
+                # Return the error result rather than raising an exception
+                # This allows the backend to handle it gracefully
+                return result
+
             logger.info(f"Task {task.task_id} execution completed")
             return result
 

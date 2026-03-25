@@ -1,6 +1,7 @@
 import React, {JSX} from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
+import { userEvent } from 'vitest/browser';
 import TaskForm from '@src/components/TaskForm';
 import { RouterProvider, createRouter, createRootRoute, createMemoryHistory } from '@tanstack/react-router';
 import { AdvancedOptionsProvider } from '@src/lib/advanced-options-context';
@@ -101,6 +102,56 @@ describe('TaskForm (browser)', () => {
         timeBudget: expect.any(Number),
         sameDomainOnly: expect.any(Boolean),
         allowExternalLinks: expect.any(Boolean),
+      })
+    );
+
+    await cleanup();
+  });
+
+  it('submits form when Enter key is pressed in question textarea', async () => {
+    const screen = await render(<App />);
+
+    const questionTextarea = screen.getByTestId('question-textarea');
+    await expect.element(questionTextarea).toBeVisible();
+    
+    // Fill in the question field and press Enter to submit
+    await userEvent.click(questionTextarea);
+    await userEvent.keyboard('What is the capital of France?{Enter}');
+
+    // Verify that createTask was called with the correct payload
+    await expect(createTask).toHaveBeenCalledOnce();
+    await expect(createTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: 'What is the capital of France?',
+      })
+    );
+
+    await cleanup();
+  });
+
+  it('submits form when Enter key is pressed in seed URL input', async () => {
+    const screen = await render(<App />);
+
+    const questionTextarea = screen.getByTestId('question-textarea');
+    const seedUrlInput = screen.getByTestId('seed-url-input');
+    
+    await expect.element(questionTextarea).toBeVisible();
+    await expect.element(seedUrlInput).toBeVisible();
+    
+    // Fill in question field
+    await userEvent.click(questionTextarea);
+    await userEvent.keyboard('What is quantum computing?');
+    
+    // Fill in seed URL field and press Enter to submit
+    await userEvent.click(seedUrlInput);
+    await userEvent.keyboard('https://example.com{Enter}');
+
+    // Verify that createTask was called with the correct payload
+    await expect(createTask).toHaveBeenCalledOnce();
+    await expect(createTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: 'What is quantum computing?',
+        seedUrl: 'https://example.com',
       })
     );
 

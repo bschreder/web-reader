@@ -1,6 +1,6 @@
 # Web Reader - AI Assistant Instructions (Concise)
 
-This guide is for AI coding assistants (like GitHub Copilot) working in this repo. It prioritizes the rules and patterns you must follow; deep details live in the linked docs below.
+This guide is for AI coding assistants (like GitHub Copilot) working in this repo. It prioritizes the rules and patterns you must follow; deep details live in the linked docs below. Place all inprocess instructions and summary `*.md` files in `.github/doc` folder.
 
 ## Project Overview
 

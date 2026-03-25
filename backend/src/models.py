@@ -110,8 +110,27 @@ class Citation(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     url: str
-    title: str
+    title: Optional[str] = "Unknown"
     excerpt: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Citation":
+        """Create Citation from LangChain citation dict.
+
+        Extracts only the fields needed for the frontend Citation model.
+        LangChain may include additional fields like 'source', 'extra', 'parent' etc.
+
+        Args:
+            data: Dict with at minimum 'url' key, optionally 'title', 'excerpt'
+
+        Returns:
+            Citation instance
+        """
+        return cls(
+            url=data["url"],
+            title=data.get("title", "Unknown"),
+            excerpt=data.get("excerpt"),
+        )
 
 
 class TaskResponse(BaseModel):
@@ -130,6 +149,7 @@ class TaskResponse(BaseModel):
     answer: Optional[str] = None
     citations: list[Citation] = []
     screenshots: list[str] = []  # URLs to screenshots
+    confidence: Optional[float] = None  # 0-1 confidence score
     error: Optional[str] = None
     metadata: dict[str, Any] = {}
 

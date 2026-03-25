@@ -1,19 +1,20 @@
-import type { CreateTaskRequest, TaskDetail, TaskSummary } from '@src/types/task';
+import type { CreateTaskRequest, TaskDetail, TaskSummary } from '@src/schemas/task.schema';
 import {
   CreateTaskRequestSchema,
   CreateTaskResponseSchema,
   TaskDetailSchema,
   ListTasksResponseSchema,
 } from '@src/schemas/task.schema';
+import { safeParseData } from './safeParseData';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 /**
  * Create a new research task.
  * @param {CreateTaskRequest} req - The task creation request
- * @returns {Promise<{id: string}>} A promise resolving to the new task ID
+ * @returns {Promise<{taskId: string}>} A promise resolving to the new task ID
  */
-export async function createTask(req: CreateTaskRequest): Promise<{ id: string }> {
+export async function createTask(req: CreateTaskRequest): Promise<{ taskId: string }> {
   // Validate request data before sending
   const validatedReq = CreateTaskRequestSchema.parse(req);
   
@@ -26,7 +27,8 @@ export async function createTask(req: CreateTaskRequest): Promise<{ id: string }
   
   // Validate response data
   const data = await res.json();
-  return CreateTaskResponseSchema.parse(data);
+  const validated = CreateTaskResponseSchema.parse(data);
+  return { taskId: validated.taskId };
 }
 
 /**
@@ -38,9 +40,13 @@ export async function getTask(id: string): Promise<TaskDetail> {
   const res = await fetch(`${API_URL}/api/tasks/${id}`);
   if (!res.ok) throw new Error(`Failed to get task: ${res.status}`);
   
-  // Validate response data
   const data = await res.json();
-  return TaskDetailSchema.parse(data);
+  const parsed = safeParseData(TaskDetailSchema, data);
+  if (!parsed) {
+    console.error('Received data:', data);
+    throw new Error('Invalid task detail payload');
+  }
+  return parsed;
 }
 
 /**
@@ -51,9 +57,13 @@ export async function listTasks(): Promise<TaskSummary[]> {
   const res = await fetch(`${API_URL}/api/history`);
   if (!res.ok) throw new Error(`Failed to list tasks: ${res.status}`);
   
-  // Validate response data
   const data = await res.json();
-  return ListTasksResponseSchema.parse(data);
+  const parsed = safeParseData(ListTasksResponseSchema, data);
+  if (!parsed) {
+    console.error('Received data:', data);
+    throw new Error('Invalid task list payload');
+  }
+  return parsed;
 }
 
 /**

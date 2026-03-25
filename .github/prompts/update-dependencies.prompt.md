@@ -6,10 +6,10 @@ You are GitHub Copilot working in the `web-reader` monorepo. Your task is to saf
 
 This prompt may be invoked for one or more of the following codebases:
 
-- `#file:backend`   → Python project managed by Poetry
+- `#file:backend` → Python project managed by Poetry
 - `#file:langchain` → Python project managed by Poetry
-- `#file:fastmcp`   → Python project managed by Poetry
-- `#file:frontend`  → TypeScript/React project managed by npm
+- `#file:fastmcp` → Python project managed by Poetry
+- `#file:frontend` → TypeScript/React project managed by npm
 
 ## High-Level Goals
 
@@ -40,6 +40,7 @@ Follow these steps carefully and **do not skip any**:
          - `cd /workspaces/web-reader/fastmcp && poetry update`
      - Wait for the command to finish and record whether it succeeded or failed.
      - If **any** `poetry update` fails, stop updating further projects, collect the error output, and surface a clear summary to the user.
+     - If package update succeeds then update the `pyproject.toml` with the current dependencies.
 
 3. **Update Frontend Dependencies (npm)**
    - If `#file:frontend` is requested:
@@ -48,6 +49,7 @@ Follow these steps carefully and **do not skip any**:
        - `npm i --legacy-peer-deps`
      - Wait for the command to finish and record whether it succeeded or failed.
      - If the `npm` command fails, stop and surface the error clearly.
+     - If package update succeeds then update the `package.json` with the current dependencies.
 
 4. **Run the Full Test Suite**
    - After all requested dependency updates succeed, run the unified test script from the repo root:

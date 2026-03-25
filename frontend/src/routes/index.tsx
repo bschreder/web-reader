@@ -23,5 +23,7 @@ function HomePage(): JSX.Element {
 }
 
 export const Route = createFileRoute('/')({
+  // Enable SSR for this route - no server-side data loading needed for home page
+  ssr: true,
   component: HomePage,
 });

@@ -44,6 +44,7 @@ from src.config import (
 )
 from src.langchain import close_langchain_client, get_langchain_client
 from src.models import (
+    Citation,
     CompleteEvent,
     ErrorEvent,
     ErrorResponse,
@@ -118,11 +119,9 @@ app = FastAPI(
 def custom_json_encoder(obj):
     """Custom JSON encoder that handles Pydantic models with by_alias."""
     if isinstance(obj, BaseModel):
-        return obj.model_dump(by_alias=True, exclude_none=False)
+        return obj.model_dump(by_alias=True, exclude_none=False, mode="json")
     return jsonable_encoder(obj)
 
-
-app.json_encoder = custom_json_encoder
 
 # CORS middleware
 app.add_middleware(
@@ -233,14 +232,18 @@ async def create_new_task(task_data: TaskCreate):
 
             # Update task with results
             t.answer = result.get("answer")
-            t.citations = result.get("citations", [])
+            t.citations = [
+                Citation.from_dict(c) if isinstance(c, dict) else c
+                for c in result.get("citations", [])
+            ]
             t.screenshots = result.get("screenshots", [])
             t.metadata = result.get("metadata", {})
 
             # Save artifacts
             await save_task_result(t.task_id, t.to_dict())
             if t.citations:
-                await save_sources(t.task_id, t.citations)
+                # Convert Citation models to dicts for JSON serialization
+                await save_sources(t.task_id, [c.model_dump() for c in t.citations])
 
         # Execute task asynchronously
         asyncio.create_task(execute_task(task, task_executor))
@@ -475,8 +478,11 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
 
                 await asyncio.sleep(1)
 
-    except WebSocketDisconnect:
+    except WebSocketDisconnect as e:
         logger.info(f"WebSocket disconnected for task {task_id}")
+        logger.debug(
+            f"WebSocket disconnect details - task_id={task_id}, code={getattr(e, 'code', 'N/A')}, reason={getattr(e, 'reason', 'N/A')}"
+        )
 
     except Exception as e:
         logger.error(f"WebSocket error for task {task_id}: {e}")
@@ -489,11 +495,6 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
             await websocket.send_json(custom_json_encoder(error_event))
         except Exception:
             pass
-
-
-# ============================================================================
-# Artifact Endpoints
-# ============================================================================
 
 
 @app.get("/api/tasks/{task_id}/artifacts")

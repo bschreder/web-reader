@@ -1,7 +1,7 @@
 import React, { JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { listTasks } from '@lib/api';
-import type { TaskSummary } from '@src/types/task';
+import type { TaskSummary } from '@src/schemas/task.schema';
 
 /**
  * TaskHistory displays a list of all completed and pending tasks.
@@ -29,8 +29,8 @@ export default function TaskHistory(): JSX.Element {
         </thead>
         <tbody>
           {(data ?? []).map((t) => (
-            <tr key={t.id} className="border-b border-neutral-900">
-              <td className="py-2 font-mono">{t.id}</td>
+            <tr key={t.taskId} className="border-b border-neutral-900">
+              <td className="py-2 font-mono">{t.taskId}</td>
               <td className="py-2">{t.question}</td>
               <td className="py-2">{t.status}</td>
               <td className="py-2">{new Date(t.createdAt).toLocaleString()}</td>

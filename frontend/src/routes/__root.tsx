@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { JSX, Suspense } from 'react';
+import { JSX } from 'react';
 import Header from '@components/Header';
 import Footer from '@components/Footer';
 import Sidebar from '@components/Sidebar';
@@ -85,6 +85,10 @@ function RootLayout(): JSX.Element {
 }
 
 export const Route = createRootRoute({
+  ssr: true,
+  notFoundComponent: NotFound,
+  component: RootLayout,
+  // Enable SSR by default for all child routes (can be overridden per-route)
   head: () => ({
     meta: [
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -93,8 +97,6 @@ export const Route = createRootRoute({
     ],
     links: [{ rel: 'stylesheet', href: appCss, precedence: 'default' }],
   }),
-  notFoundComponent: NotFound,
-  component: RootLayout,
 });
 
 export default RootLayout;

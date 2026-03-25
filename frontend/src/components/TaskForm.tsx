@@ -41,11 +41,35 @@ export default function TaskForm(): JSX.Element {
   }
 
   /**
+   * Handle Enter key press in textarea (Ctrl+Enter submits, plain Enter adds newline).
+   * @param {React.KeyboardEvent<HTMLTextAreaElement>} e - The keyboard event
+   * @returns {void}
+   */
+  function onTextareaKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>): void {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      onSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+    }
+  }
+
+  /**
+   * Handle Enter key press in seed URL input to submit the form.
+   * @param {React.KeyboardEvent<HTMLInputElement>} e - The keyboard event
+   * @returns {void}
+   */
+  function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+    }
+  }
+
+  /**
    * Handle form submission to create a task.
-   * @param {React.FormEvent} e - The form submission event
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
    * @returns {Promise<void>} A promise that resolves when submission is complete
    */
-  async function onSubmit(e: React.FormEvent): Promise<void> {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     setError(null);
     if (!question.trim()) {
@@ -54,7 +78,7 @@ export default function TaskForm(): JSX.Element {
     }
     setSubmitting(true);
     try {
-      const { id } = await createTask({
+      const { taskId } = await createTask({
         question,
         seedUrl: seedUrl || undefined,
         searchEngine: searchEngine,
@@ -66,7 +90,7 @@ export default function TaskForm(): JSX.Element {
         sameDomainOnly: sameDomainOnly,
         allowExternalLinks: allowExternalLinks,
       });
-      navigate({ to: '/tasks/$id', params: { id } });
+      navigate({ to: '/tasks/$id', params: { id: taskId } });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -90,11 +114,13 @@ export default function TaskForm(): JSX.Element {
             data-testid="question-textarea"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={onTextareaKeyDown}
             className="w-full rounded-lg border border-neutral-700 bg-neutral-900/50 p-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 transition-all backdrop-blur-sm"
             rows={6}
             required
             placeholder="What would you like to research? e.g., 'What are the latest developments in quantum computing?'"
           />
+          <p className="text-xs text-neutral-500 mt-1.5 ml-1">Press Ctrl+Enter (or Cmd+Enter on Mac) to submit</p>
         </label>
         
         <label htmlFor="seed-url-input" className="block">
@@ -111,6 +137,7 @@ export default function TaskForm(): JSX.Element {
             data-testid="seed-url-input"
             value={seedUrl}
             onChange={(e) => setSeedUrl(e.target.value)}
+            onKeyDown={onInputKeyDown}
             type="url"
             placeholder="https://example.com"
             className="w-full rounded-lg border border-neutral-700 bg-neutral-900/50 p-3 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/50 transition-all backdrop-blur-sm"

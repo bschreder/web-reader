@@ -12,6 +12,7 @@ export default [
     ignores: ['dist', 'coverage', 'node_modules', '*.config.{js,ts}'],
   },
   ...tseslint.configs.recommended,
+  ...pluginRouter.configs['flat/recommended'],
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
@@ -37,10 +38,10 @@ export default [
     },
     rules: {
       // Recommended
-      ...tseslint.configs.recommended,
+      // ...tseslint.configs.recommended,
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      ...pluginRouter.configs.recommended.rules,
+      // ...pluginRouter.configs['flat/recommended'],
       ...jsxA11y.configs.recommended.rules,
       ...jsdoc.configs['flat/recommended-typescript'].rules,
 
@@ -95,6 +96,10 @@ export default [
       // TypeScript
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': 'off',
+
+      // React
+      'react/react-in-jsx-scope': 'off',
+      'react/jsx-uses-react': 'off',
 
       // Custom and Overrides
       semi: ['error', 'always'],
