@@ -174,19 +174,19 @@ All services already have proper multistage Dockerfiles:
 
 ### ✅ FastMCP Dockerfile
 
-- `base`: Python 3.13-slim, system deps, `pyproject.toml` + Poetry
+- `base`: Python 3.13-slim, system deps, `pyproject.toml` + uv
 - `prod`: Copy code, non-root user, health check
 - `dev`: Add debug dependencies, watchfiles, debugpy support
 
 ### ✅ Backend Dockerfile
 
-- `base`: Python 3.13-slim, `pyproject.toml` + Poetry
+- `base`: Python 3.13-slim, `pyproject.toml` + uv
 - `prod`: Minimal production image
 - `dev`: uvicorn reload, debugpy support
 
 ### ✅ LangChain Dockerfile
 
-- `base`: Python 3.13-slim, `pyproject.toml` + Poetry
+- `base`: Python 3.13-slim, `pyproject.toml` + uv
 - `prod`: Production runtime
 - `dev`: watchfiles hot reload, debugpy support
 
@@ -305,10 +305,10 @@ Frontend testing has not been addressed yet:
 # 1. Ensure you're in the devcontainer
 cd /workspaces/web-reader
 
-# 2. Install all dependencies via Poetry (per service)
-cd fastmcp && poetry install --with dev && cd ..
-cd backend && poetry install --with test,debug && cd ..
-cd langchain && poetry install --with test && cd ..
+# 2. Install all dependencies via uv (per service)
+cd fastmcp && uv sync --group dev && cd ..
+cd backend && uv sync --group test --group debug && cd ..
+cd langchain && uv sync --group test && cd ..
 
 # 3. Run all unit tests
 ./scripts/test-all.sh unit

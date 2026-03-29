@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
-# Ensure user-local bin is on PATH so pipx/poetry-installed scripts are available
+# Ensure user-local bin is on PATH so uv-installed scripts are available
 export PATH="$HOME/.local/bin:$PATH"
 
-# Verify poetry is available
-if ! command -v poetry >/dev/null 2>&1; then
-  echo "Error: poetry not found on PATH. Current PATH: $PATH"
-  echo "Make sure the devcontainer image is rebuilt so Poetry is installed."
+# Verify uv is available
+if ! command -v uv >/dev/null 2>&1; then
+  echo "Error: uv not found on PATH. Current PATH: $PATH"
+  echo "Make sure the devcontainer image is rebuilt so uv is installed."
   exit 1
 fi
 
@@ -25,14 +25,14 @@ if [ -d "/workspaces/web-reader/frontend" ]; then
   npx --prefix /workspaces/web-reader/frontend playwright install --with-deps chromium
 fi
 
-# Install Python dependencies for all services using Poetry
+# Install Python dependencies for all services using uv
 for svc in backend fastmcp langchain; do
   svcdir="/workspaces/web-reader/$svc"
   if [ -d "$svcdir" ] && [ -f "$svcdir/pyproject.toml" ]; then
-    echo "Installing Python dependencies for $svc via Poetry..."
+    echo "Installing Python dependencies for $svc via uv..."
     # Clean up any stale venv to avoid permission issues
     rm -rf "$svcdir/.venv" "$svcdir/__pycache__" "$svcdir/build" "$svcdir/dist"
-    (cd "$svcdir"  && poetry lock --no-interaction --no-ansi && poetry install --with test,debug --no-interaction --no-ansi)
+    (cd "$svcdir"  && uv lock && uv sync --all-groups)
   fi
 done
 

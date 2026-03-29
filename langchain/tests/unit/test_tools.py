@@ -138,3 +138,123 @@ class TestToolWrappers:
         assert "navigate_to" in tool_names
         assert "get_page_content" in tool_names
         assert "take_screenshot" in tool_names
+
+    def test_create_langchain_tools_with_search_and_links(self, mock_mcp_client):
+        """Test optional search/link tool registration."""
+        tools = create_langchain_tools(mock_mcp_client, include_search_and_links=True)
+
+        assert len(tools) == 5
+        tool_names = [tool.name for tool in tools]
+        assert "search_for_question" in tool_names
+        assert "extract_links_from_page" in tool_names
+
+    @pytest.mark.asyncio
+    async def test_search_for_question_wrapper_validation(self):
+        """Test validation errors for search wrapper input."""
+        from src.tools import search_for_question_wrapper
+
+        result = await search_for_question_wrapper("q", "duckduckgo", 0)
+        assert "max_results must be between 1 and 50" in result
+
+        result = await search_for_question_wrapper("q", "invalid", 5)
+        assert "Unknown search engine" in result
+
+    @pytest.mark.asyncio
+    async def test_search_for_question_wrapper_success_and_empty(self, monkeypatch):
+        """Test successful and empty search responses."""
+        from src.search import SearchResult
+        from src.tools import search_for_question_wrapper
+
+        async def fake_search(_query, engine, max_results):
+            assert engine == "duckduckgo"
+            assert max_results == 2
+            return [
+                SearchResult(
+                    title="Result One",
+                    url="https://example.com/1",
+                    snippet="Snippet one",
+                ),
+                SearchResult(
+                    title="Result Two",
+                    url="https://example.com/2",
+                    snippet="Snippet two",
+                ),
+            ]
+
+        async def fake_empty(*_args, **_kwargs):
+            return []
+
+        monkeypatch.setattr("src.tools.search", fake_search)
+        reset_collector()
+        result = await search_for_question_wrapper("question", "duckduckgo", 2)
+        assert "Found 2 results" in result
+        collector = get_collector()
+        assert any(c.url == "https://example.com/1" for c in collector.citations)
+
+        monkeypatch.setattr("src.tools.search", fake_empty)
+        result = await search_for_question_wrapper("question", "duckduckgo", 2)
+        assert "No results found" in result
+
+    @pytest.mark.asyncio
+    async def test_search_for_question_wrapper_exception(self, monkeypatch):
+        """Test search wrapper error path."""
+        from src.tools import search_for_question_wrapper
+
+        async def fake_search_error(*_args, **_kwargs):
+            raise RuntimeError("search service unavailable")
+
+        monkeypatch.setattr("src.tools.search", fake_search_error)
+        result = await search_for_question_wrapper("question", "duckduckgo", 3)
+        assert "Search error:" in result
+
+    @pytest.mark.asyncio
+    async def test_extract_links_from_page_wrapper_paths(self, monkeypatch):
+        """Test link extraction wrapper for success and edge paths."""
+        from src.link_extractor import Link
+        from src.tools import extract_links_from_page_wrapper
+
+        sample_links = [
+            Link(url="https://example.com/a", text="A", depth=0),
+            Link(url="https://example.com/b", text="B", depth=0),
+        ]
+
+        def fake_extract(*_args, **_kwargs):
+            return sample_links
+
+        def fake_filter(*_args, **_kwargs):
+            return sample_links
+
+        monkeypatch.setattr("src.tools.extract_links", fake_extract)
+        monkeypatch.setattr("src.tools.filter_links", fake_filter)
+
+        result = await extract_links_from_page_wrapper(
+            "<html></html>", "https://example.com", 1, False, True, 2
+        )
+        assert "Extracted 1 links" in result
+
+        monkeypatch.setattr("src.tools.extract_links", lambda *_a, **_k: [])
+        result = await extract_links_from_page_wrapper(
+            "<html></html>", "https://example.com", 10, False, True, 2
+        )
+        assert result == "No links found in page content"
+
+        monkeypatch.setattr("src.tools.extract_links", fake_extract)
+        monkeypatch.setattr("src.tools.filter_links", lambda *_a, **_k: [])
+        result = await extract_links_from_page_wrapper(
+            "<html></html>", "https://example.com", 10, False, True, 2
+        )
+        assert result == "No valid links found after filtering"
+
+    @pytest.mark.asyncio
+    async def test_extract_links_from_page_wrapper_exception(self, monkeypatch):
+        """Test link extraction wrapper exception path."""
+        from src.tools import extract_links_from_page_wrapper
+
+        def fake_extract_error(*_args, **_kwargs):
+            raise RuntimeError("parse failed")
+
+        monkeypatch.setattr("src.tools.extract_links", fake_extract_error)
+        result = await extract_links_from_page_wrapper(
+            "<html></html>", "https://example.com", 10, False, True, 2
+        )
+        assert "Link extraction error:" in result

@@ -2,18 +2,14 @@
 FROM python:3.13-slim AS base
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    build-essential curl pipx && \
-    pipx ensurepath && \
+    build-essential curl && \
     rm -rf /var/lib/apt/lists/*
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:${PATH}"
-RUN pipx install poetry
 
-COPY pyproject.toml poetry.lock* ./
-# Configure Poetry to create a virtualenv inside the project at `.venv`
-ENV POETRY_VIRTUALENVS_CREATE=true
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+COPY pyproject.toml uv.lock* ./
 ENV PATH="/app/.venv/bin:${PATH}"
-RUN poetry install --only main --no-root --no-interaction --no-ansi
+RUN uv lock && uv sync --no-dev
 
 FROM base AS prod
 COPY . .
@@ -22,8 +18,8 @@ CMD ["python", "server.py"]
 
 # Dev stage with debug & reload support
 FROM base AS dev
-COPY pyproject.toml poetry.lock* ./
-RUN poetry install --with debug,test --no-root --no-interaction --no-ansi
+COPY pyproject.toml uv.lock* ./
+RUN uv lock && uv sync --all-groups
 COPY . .
 EXPOSE 8000 5671
 # Support optional debugpy via DEBUGPY_PORT env var

@@ -35,13 +35,13 @@ cd ./langchain
 Run ruff to check for code style and quality issues:
 
 ```bash
-poetry run ruff check .
+uv run ruff check .
 ```
 
 If errors are found, attempt to auto-fix them:
 
 ```bash
-poetry run ruff check --fix .
+uv run ruff check --fix .
 ```
 
 If there are remaining errors that cannot be auto-fixed, manually correct them before proceeding.
@@ -51,7 +51,7 @@ If there are remaining errors that cannot be auto-fixed, manually correct them b
 Ensure code is properly formatted:
 
 ```bash
-poetry run ruff format .
+uv run ruff format .
 ```
 
 ## 4. Run Unit Tests
@@ -59,7 +59,7 @@ poetry run ruff format .
 Run all unit tests to ensure functionality is not broken:
 
 ```bash
-poetry run pytest tests/unit/ -v
+uv run pytest tests/unit/ -v
 ```
 
 Fix any failing tests before proceeding.
@@ -69,7 +69,7 @@ Fix any failing tests before proceeding.
 Run integration tests to validate MCP client and service integration:
 
 ```bash
-poetry run pytest tests/integration/ -v
+uv run pytest tests/integration/ -v
 ```
 
 Fix any failing tests before proceeding.
@@ -79,7 +79,7 @@ Fix any failing tests before proceeding.
 Run all end-to-end tests to validate the complete orchestration workflow:
 
 ```bash
-poetry run pytest tests/e2e/ -v
+uv run pytest tests/e2e/ -v
 ```
 
 Fix any failing E2E tests before proceeding.
@@ -89,7 +89,7 @@ Fix any failing E2E tests before proceeding.
 For comprehensive validation, run the complete test suite with coverage:
 
 ```bash
-poetry run pytest --cov=src --cov-report=html --cov-report=json --cov-report=xml -v
+uv run pytest --cov=src --cov-report=html --cov-report=json --cov-report=xml -v
 ```
 
 Verify that code coverage meets the required thresholds. Fix any coverage gaps as necessary before proceeding.
@@ -125,9 +125,9 @@ For rapid validation during development:
 ```bash
 # Full validation in one go (from langchain directory)
 cd ./langchain && \
-  poetry run ruff check --fix . && \
-  poetry run ruff format . && \
-  poetry run pytest -v && \
+  uv run ruff check --fix . && \
+  uv run ruff format . && \
+  uv run pytest -v && \
   cd .. && \
   ./start.ps1 -Rebuild -Debug -Services langchain
 ```

@@ -1,12 +1,12 @@
 # Contributing Guide
 
-Concise standards for contributing code to Web Reader. For deep architectural details see `requirements.md` and `implementation.md`; for assistant workflow see `copilot-instructions.md`.
+Concise standards for contributing code to Web Reader. For deep architectural details see `requirements.md` and `implementation.md`; for agent workflow see `../AGENTS.md`.
 
 ## Principles
 
 - Small, focused changes; prefer incremental PRs.
 - No hardcoded config/secrets; use root `.env` and `config/` files.
-- Deterministic builds (Poetry lock / package-lock.json).
+- Deterministic builds (uv lock / package-lock.json).
 - Code must be readable without explanatory comments (use clear naming).
 - Comments explain "why", not obvious "what".
 - Structured error responses instead of uncaught exceptions.
@@ -88,7 +88,7 @@ Examples:
 
 ## Dependency Changes
 
-- Python: add to `pyproject.toml`; avoid pinning unless necessary for reproducibility; run `poetry lock`.
+- Python: add to `pyproject.toml`; avoid pinning unless necessary for reproducibility; run `uv lock`.
 - Node: use `npm install <pkg>`; do not commit unused dependencies; prefer micro-libraries for specific needs.
 - After adding dependencies in Docker context, ensure both `dev` and `prod` stages updated if required at runtime.
 
@@ -116,7 +116,7 @@ Examples:
 - Implementation: `./implementation.md`
 - Use Cases: `./use-case.md`
 - Project Plan: `./project-plan.md`
-- Assistant Guide: `./copilot-instructions.md`
+- Agent Guide: `../AGENTS.md`
 - FastMCP: `../fastmcp/README.md`
 - LangChain: `../langchain/README.md`
 - Backend: `../backend/README.md`

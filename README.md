@@ -255,10 +255,10 @@ OLLAMA_MODEL=llama3.2
 ```bash
 # Backend
 cd backend
-# Install Poetry if needed: https://python-poetry.org/docs/
-poetry install
+# Install uv if needed: https://docs.astral.sh/uv/
+uv sync
 # Run the development server
-poetry run uvicorn server:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn server:app --reload --host 0.0.0.0 --port 8000
 
 # Frontend
 cd frontend
@@ -270,16 +270,16 @@ npm install
 ```bash
 # Backend tests
 cd backend
-poetry install --with test
-poetry run pytest
+uv sync --group test
+uv run pytest
 
 cd ../fastmcp
-poetry install --with dev
-poetry run pytest
+uv sync --group dev
+uv run pytest
 
 cd ../langchain
-poetry install --with test
-poetry run pytest
+uv sync --group test
+uv run pytest
 
 # Frontend tests
 cd frontend
@@ -407,7 +407,7 @@ tail -f logs/backend.log logs/langchain.log logs/fastmcp.log
 | Use Cases | `.github/use-case.md` | User scenarios & workflows |
 | Implementation | `.github/implementation.md` | HOW: patterns, Docker, agent examples |
 | Project Plan | `.github/project-plan.md` | Phases & roadmap |
-| Assistant Guide | `.github/copilot-instructions.md` | Concise rules for AI assistants |
+| Agent Guide | `AGENTS.md` | Concise rules for AI coding agents |
 | Contributing | `.github/CONTRIBUTING.md` | Code style, testing, PR checklist |
 | FastMCP Service | `fastmcp/README.md` | Browser tools, rate limiting, domain filtering |
 | LangChain Service | `langchain/README.md` | Agent orchestration, tool wrappers |
@@ -424,7 +424,7 @@ tail -f logs/backend.log logs/langchain.log logs/fastmcp.log
 - Requirements: `./.github/requirements.md`
 - Implementation: `./.github/implementation.md`
 - Contributing: `./.github/CONTRIBUTING.md`
-- Assistant Guide: `./.github/copilot-instructions.md`
+- Agent Guide: `./AGENTS.md`
 
 ## 🤝 Contributing
 

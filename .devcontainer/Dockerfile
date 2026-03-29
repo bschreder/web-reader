@@ -43,10 +43,8 @@ RUN wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsof
     && rm -rf /var/lib/apt/lists/* /tmp/packages-microsoft-prod.deb
 USER ${USERNAME}
 
-# Install pipx and Poetry as non-root user (developer tools)
-RUN python3.13 -m pip install --user pipx && \
-    python3.13 -m pipx ensurepath && \
-    curl -sSL https://install.python-poetry.org | python3.13 -
+# Install uv as non-root user (developer tool)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create workspace folder and set user
 RUN if ! getent group ${USERNAME}; then groupadd --gid ${USER_GID} ${USERNAME}; fi \

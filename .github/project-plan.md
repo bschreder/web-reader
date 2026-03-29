@@ -46,8 +46,8 @@ This document outlines the phased implementation plan for building the Web Reade
 For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
 
 - [x] Stage `base`: runtime (Python 3.13 slim / Node 24 alpine), system deps, non-root user
-- [x] Stage `dev`: install dev dependencies (pytest, pytest-cov, watchfiles, debugpy / vite, vitest, playwright) via Poetry for Python services and npm for frontend, set env (`ENVIRONMENT=development`), expose debug ports, entrypoint uses watcher/HMR
-- [x] Stage `prod`: install production deps only (Poetry groups `main`/`test`/`debug` as appropriate for Python services), copy source, drop build caches, non-root execution, healthcheck friendly CMD
+- [x] Stage `dev`: install dev dependencies (pytest, pytest-cov, watchfiles, debugpy / vite, vitest, playwright) via uv for Python services and npm for frontend, set env (`ENVIRONMENT=development`), expose debug ports, entrypoint uses watcher/HMR
+- [x] Stage `prod`: install production deps only (uv groups `main`/`test`/`debug` as appropriate for Python services), copy source, drop build caches, non-root execution, healthcheck friendly CMD
 - [x] Verify images build with: `docker build --target dev` and `docker build --target prod`
 
 #### Project Structure
@@ -59,8 +59,8 @@ For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
   │   ├── requirements.md
   │   ├── use-case.md
   │   ├── implementation.md
-  │   ├── project-plan.md
-  │   └── copilot-instructions.md
+  │   └── project-plan.md
+  ├── AGENTS.md
   ├── frontend/          # TanStack Start
   ├── backend/           # FastAPI
   ├── langchain/         # Orchestrator
@@ -184,16 +184,16 @@ Devcontainer (preferred):
 
 ```
 cd fastmcp
-poetry install --with dev
-poetry run pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
-poetry run pytest tests/integration -v
-poetry run pytest tests/e2e -v --maxfail=1
+uv sync --group dev
+uv run pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
+uv run pytest tests/integration -v
+uv run pytest tests/e2e -v --maxfail=1
 ```
 
 Optional inside container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp poetry run pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp uv run pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
 ```
 
 ### Deliverables
@@ -282,16 +282,16 @@ Devcontainer:
 
 ```
 cd backend
-poetry install --with test
-poetry run pytest tests/unit --cov=src --cov-branch --cov-report=term
-poetry run pytest tests/integration -v
-poetry run pytest tests/e2e -v
+uv sync --group test
+uv run pytest tests/unit --cov=src --cov-branch --cov-report=term
+uv run pytest tests/integration -v
+uv run pytest tests/e2e -v
 ```
 
 Optional container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend poetry run pytest tests/unit
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend uv run pytest tests/unit
 ```
 
 ### Deliverables
@@ -379,16 +379,16 @@ Devcontainer:
 
 ```
 cd langchain
-poetry install --with test
-poetry run pytest tests/unit --cov=src --cov-branch --cov-report=term
-poetry run pytest tests/integration -v
-poetry run pytest tests/e2e -v
+uv sync --group test
+uv run pytest tests/unit --cov=src --cov-branch --cov-report=term
+uv run pytest tests/integration -v
+uv run pytest tests/e2e -v
 ```
 
 Optional container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain poetry run pytest tests/unit
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain uv run pytest tests/unit
 ```
 
 ### Deliverables
@@ -689,9 +689,9 @@ Each project job should:
 **Backend Tests:**
 
 - [ ] Start required infrastructure (Ollama, Playwright) via Docker Compose
-- [ ] Run unit tests (`poetry run pytest tests/unit --cov=src --cov-branch`)
-- [ ] Run integration tests (`poetry run pytest tests/integration`)
-- [ ] Run E2E tests (`poetry run pytest tests/e2e`)
+- [ ] Run unit tests (`uv run pytest tests/unit --cov=src --cov-branch`)
+- [ ] Run integration tests (`uv run pytest tests/integration`)
+- [ ] Run E2E tests (`uv run pytest tests/e2e`)
 - [ ] Enforce >80% coverage threshold
 - [ ] Upload coverage artifact
 - [ ] Cleanup infrastructure containers

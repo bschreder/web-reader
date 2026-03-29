@@ -88,9 +88,9 @@ cd /workspaces/web-reader
 ./scripts/test-all-python.sh
 
 # Individual services
-cd fastmcp && poetry run pytest --cov=src --cov-report=term
-cd langchain && poetry run pytest tests/unit tests/integration --cov=src --cov-report=term
-cd backend && poetry run pytest tests/unit tests/integration --cov=src --cov-report=term
+cd fastmcp && uv run pytest --cov=src --cov-report=term
+cd langchain && uv run pytest tests/unit tests/integration --cov=src --cov-report=term
+cd backend && uv run pytest tests/unit tests/integration --cov=src --cov-report=term
 
 # Frontend (both unit and browser tests)
 cd frontend && npm run test:coverage
@@ -144,7 +144,7 @@ pytest tests/ --cov=src --cov-branch --cov-report=html
 
 ### From Devcontainer (Recommended)
 
-The devcontainer has Python 3.13 and Node.js 24 pre-installed. Poetry environments are isolated per service.
+The devcontainer has Python 3.13 and Node.js 24 pre-installed. uv environments are isolated per service.
 
 #### FastMCP Tests
 
@@ -152,19 +152,19 @@ The devcontainer has Python 3.13 and Node.js 24 pre-installed. Poetry environmen
 cd /workspaces/web-reader/fastmcp
 
 # Unit tests only (fast, no external dependencies)
-poetry run pytest tests/unit/ -v
+uv run pytest tests/unit/ -v
 
 # Integration tests (requires Playwright container running)
-poetry run pytest tests/integration/ -v
+uv run pytest tests/integration/ -v
 
 # E2E tests (full workflows)
-poetry run pytest tests/e2e/ -v
+uv run pytest tests/e2e/ -v
 
 # All tests with coverage
-poetry run pytest --cov=src --cov-report=html --cov-report=term
+uv run pytest --cov=src --cov-report=html --cov-report=term
 
 # Quick validation after changes
-poetry run ruff check --fix . && poetry run ruff format . && poetry run pytest -v
+uv run ruff check --fix . && uv run ruff format . && uv run pytest -v
 ```
 
 **Current Status**: ✅ 66 tests passing, 93% coverage
@@ -175,19 +175,19 @@ poetry run ruff check --fix . && poetry run ruff format . && poetry run pytest -
 cd /workspaces/web-reader/langchain
 
 # Unit tests only
-poetry run pytest tests/unit/ -v
+uv run pytest tests/unit/ -v
 
 # Integration tests (requires Ollama + FastMCP running)
-poetry run pytest tests/integration/ -v
+uv run pytest tests/integration/ -v
 
 # E2E tests (requires full stack)
-poetry run pytest tests/e2e/ -v
+uv run pytest tests/e2e/ -v
 
 # Unit + Integration with coverage
-poetry run pytest tests/unit/ tests/integration/ --cov=src --cov-report=html --cov-report=term
+uv run pytest tests/unit/ tests/integration/ --cov=src --cov-report=html --cov-report=term
 
 # Quick validation after changes
-poetry run ruff check --fix . && poetry run ruff format . && poetry run pytest tests/unit/ tests/integration/ -v
+uv run ruff check --fix . && uv run ruff format . && uv run pytest tests/unit/ tests/integration/ -v
 ```
 
 **Current Status**: ✅ 41 tests passing (unit+integration), 85% coverage  
@@ -199,19 +199,19 @@ poetry run ruff check --fix . && poetry run ruff format . && poetry run pytest t
 cd /workspaces/web-reader/backend
 
 # Unit tests only
-poetry run pytest tests/unit/ -v
+uv run pytest tests/unit/ -v
 
 # Integration tests (mocked LangChain client)
-poetry run pytest tests/integration/ -v
+uv run pytest tests/integration/ -v
 
 # E2E tests (requires LangChain service running)
-poetry run pytest tests/e2e/ -v
+uv run pytest tests/e2e/ -v
 
 # Unit + Integration with coverage
-poetry run pytest tests/unit/ tests/integration/ --cov=src --cov-report=html --cov-report=term
+uv run pytest tests/unit/ tests/integration/ --cov=src --cov-report=html --cov-report=term
 
 # Quick validation after changes
-poetry run ruff check --fix . && poetry run ruff format . && poetry run pytest tests/unit/ tests/integration/ -v
+uv run ruff check --fix . && uv run ruff format . && uv run pytest tests/unit/ tests/integration/ -v
 ```
 
 **Current Status**: ✅ 69 tests passing (unit+integration), 89% coverage  

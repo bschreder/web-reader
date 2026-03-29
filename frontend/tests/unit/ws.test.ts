@@ -76,12 +76,13 @@ describe('WebSocketManager', () => {
     const mgr = new WebSocketManager({ taskId: 'test-123', onEvent });
     mgr.connect();
 
-    // Simulate a valid stream event
+    // Simulate a valid stream event in the current schema format
     if (mockWebSocketInstance.onmessage) {
       mockWebSocketInstance.onmessage({ 
         data: JSON.stringify({ 
-          type: 'thinking', 
-          ts: Date.now(),
+          type: 'agent:thinking', 
+          taskId: 'test-123',
+          timestamp: new Date().toISOString(),
           message: 'Processing request'
         }) 
       } as MessageEvent);

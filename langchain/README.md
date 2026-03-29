@@ -56,10 +56,10 @@ LangChain Orchestrator (This Service)
 
 ```bash
 # Install dependencies
-poetry install
+uv sync
 
 # Install test dependencies
-poetry install --with test
+uv sync --group test
 ```
 
 ## Configuration

@@ -276,4 +276,4 @@ Potential future improvements:
 
 **Version**: 1.0  
 **Date**: November 16, 2025  
-**Author**: GitHub Copilot
+**Author**: AI Coding Agent

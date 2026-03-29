@@ -162,11 +162,11 @@ If you prefer to run FastMCP locally:
    ./stop.ps1 -Services fastmcp
    ```
 2. Set `FASTMCP_HOST=host.docker.internal` in `.env` (on Linux you may need an extra host mapping in compose).
-3. From `fastmcp/` run (use Poetry for local development):
+3. From `fastmcp/` run (use uv for local development):
       ```powershell
-      # Install dependencies with Poetry
+      # Install dependencies with uv
       cd fastmcp
-      poetry install --with dev
+      uv sync --group dev
 
       # Start FastMCP under debugpy
       python -m debugpy --listen 0.0.0.0:5673 --wait-for-client server.py

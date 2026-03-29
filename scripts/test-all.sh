@@ -40,15 +40,16 @@ run_python_tests() {
     echo ">>> Running $service tests: $test_path"
     cd "$PROJECT_ROOT/$service"
     # Ensure runtime and test dependencies are installed for local devcontainer runs
-    # Use Poetry for dependency management (replaces pip -r requirements files)
-    if command -v poetry >/dev/null 2>&1; then
-        echo "Using poetry to install dependencies for $service..."
-        poetry install --with test,debug --no-interaction --no-ansi || true
+    # Use uv for dependency management (replaces pip -r requirements files)
+    if command -v uv >/dev/null 2>&1; then
+        echo "Using uv to install dependencies for $service..."
+        uv lock || true
+        uv sync --all-groups || true
     else
-        echo "Poetry not found; skipping dependency installation for $service"
+        echo "uv not found; skipping dependency installation for $service"
     fi
 
-    PYTEST_CMD=(poetry run pytest)
+    PYTEST_CMD=(uv run pytest)
     
     if [ "$TEST_TYPE" = "unit" ] || [ "$TEST_TYPE" = "all" ]; then
         echo "  → Unit tests"

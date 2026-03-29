@@ -27,7 +27,7 @@ All application services (`frontend`, `backend`, `langchain`, `fastmcp`) MUST us
 - System packages only (no dev tooling)
 - Non-root user created (`appuser` with UID/GID stable)
 - Common environment variables (e.g. `PYTHONUNBUFFERED=1`, `NODE_ENV` default)
-- Python services install dependencies via Poetry using `pyproject.toml` (no direct `pip install -r requirements.txt` in images)
+- Python services install dependencies via uv using `pyproject.toml` and `uv.lock` (no direct `pip install -r requirements.txt` in images)
 
 2. `dev` stage:
    - Installs development dependencies (Python: `pytest`, `pytest-cov`, `pytest-asyncio`, `watchfiles`, `debugpy`; Node: `vite`, `vitest`, `playwright`, `@types/*`)
@@ -38,11 +38,13 @@ All application services (`frontend`, `backend`, `langchain`, `fastmcp`) MUST us
    - Installs production-only dependencies
    - Copies source code (no mounts)
 
-- Optimized build (e.g. `poetry install --only main --no-root`)
+- Optimized build (e.g. `uv sync --frozen --no-dev`)
 - Final CMD minimal (uvicorn with tuned workers; Node static serve / nginx)
 - Healthcheck readiness endpoints available.
 
-Example Python service Dockerfile sketch (using Poetry):
+Dependency constraints in `pyproject.toml` should use standard PEP 440 ranges. The uv/PEP 440 equivalent of Poetry-style caret ranges is `>=1.2.0,<2.0.0` for stable packages and `>=0.128,<0.129` for `0.x` packages.
+
+Example Python service Dockerfile sketch (using uv):
 
 ```Dockerfile
 FROM python:3.13-slim AS base
@@ -50,17 +52,16 @@ ENV PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 RUN useradd -m -u 1001 appuser
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-  build-essential curl pipx && \
-  pipx ensurepath && \
+  build-essential curl && \
   rm -rf /var/lib/apt/lists/*
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:${PATH}"
-RUN pipx install poetry
-COPY pyproject.toml poetry.lock* ./
-RUN poetry install --only main --no-root --no-interaction --no-ansi
+COPY pyproject.toml uv.lock* ./
+RUN uv sync --frozen --no-dev
 
 FROM base AS dev
-COPY pyproject.toml poetry.lock* ./
-RUN poetry install --with dev --no-root --no-interaction --no-ansi
+COPY pyproject.toml uv.lock* ./
+RUN uv sync --frozen --all-groups
 ENV ENVIRONMENT=development
 USER appuser
 COPY src ./src
@@ -174,20 +175,20 @@ Coverage thresholds:
 - Branch: >80%
 - Function: >80%
 
-Python execution (devcontainer preferred, using Poetry):
+Python execution (devcontainer preferred, using uv):
 
 ```bash
-cd fastmcp && poetry install --with dev && poetry run pytest tests/unit --cov=src --cov-branch
-cd backend && poetry install --with test && poetry run pytest tests/integration -v
-cd langchain && poetry install --with test && poetry run pytest tests/e2e -v
+cd fastmcp && uv sync --all-groups && uv run pytest tests/unit --cov=src --cov-branch
+cd backend && uv sync --all-groups && uv run pytest tests/integration -v
+cd langchain && uv sync --all-groups && uv run pytest tests/e2e -v
 ```
 
 Optional container exec:
 
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp poetry run pytest tests/unit --cov=src --cov-branch
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend poetry run pytest tests/integration -v
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain poetry run pytest tests/e2e -v
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp uv run pytest tests/unit --cov=src --cov-branch
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend uv run pytest tests/integration -v
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain uv run pytest tests/e2e -v
 ```
 
 Frontend execution (devcontainer):

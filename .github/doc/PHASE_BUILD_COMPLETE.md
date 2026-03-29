@@ -281,7 +281,7 @@ cd langchain && pytest tests/e2e -v -m e2e  # May fail if services not running
 - **Testing Guide**: `/workspaces/web-reader/README.TEST.md`
 - **Coverage Reports**: `<service>/coverage/html/index.html`
 - **Project Plan**: `.github/project-plan.md`
-- **AI Instructions**: `.github/copilot-instructions.md`
+- **AI Instructions**: `AGENTS.md`
 
 ## Best Practices Implemented
 
@@ -362,5 +362,5 @@ The codebase is well-structured, thoroughly tested, and ready for Phase 2 (Backe
 ---
 
 **Report Generated**: November 16, 2025  
-**Author**: GitHub Copilot (Agent)  
+**Author**: AI Coding Agent  
 **Version**: 1.0
