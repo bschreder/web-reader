@@ -33,7 +33,7 @@ export default function TaskHistory(): JSX.Element {
               <td className="py-2 font-mono">{t.taskId}</td>
               <td className="py-2">{t.question}</td>
               <td className="py-2">{t.status}</td>
-              <td className="py-2">{new Date(t.createdAt).toLocaleString()}</td>
+              <td className="py-2">{t.createdAt ? new Date(t.createdAt).toLocaleString() : '—'}</td>
             </tr>
           ))}
         </tbody>

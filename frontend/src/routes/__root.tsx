@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { JSX } from 'react';
+import { JSX, type ReactNode } from 'react';
 import Header from '@components/Header';
 import Footer from '@components/Footer';
 import Sidebar from '@components/Sidebar';
@@ -56,31 +56,51 @@ function InnerLayout(): JSX.Element {
  */
 function RootLayout(): JSX.Element {
   return (
-    <QueryClientProvider client={qc}>
-      <AdvancedOptionsProvider>
+    <RootDocument>
+      <QueryClientProvider client={qc}>
+        <AdvancedOptionsProvider>
+          <InnerLayout />
+        </AdvancedOptionsProvider>
+        <TanStackDevtools
+          plugins={[
+            {
+              name: 'TanStack Query',
+              render: <ReactQueryDevtoolsPanel />,
+              defaultOpen: false,
+            },
+            {
+              name: 'TanStack Router',
+              render: <TanStackRouterDevtoolsPanel />,
+              defaultOpen: false,
+            },
+          ]}
+          config={{
+            position: 'bottom-right',
+            defaultOpen: false,
+          }}
+        />
+      </QueryClientProvider>
+    </RootDocument>
+  );
+}
+
+/**
+ * Root HTML document shell for SSR and hydration.
+ * @param {object} props - Component props
+ * @param {ReactNode} props.children - The page content
+ * @returns {JSX.Element} Full document markup
+ */
+function RootDocument({ children }: { children: ReactNode }): JSX.Element {
+  return (
+    <html lang="en">
+      <head>
         <HeadContent />
-        <InnerLayout />
-      </AdvancedOptionsProvider>
-      <TanStackDevtools
-        plugins={[
-          {
-            name: 'TanStack Query',
-            render: <ReactQueryDevtoolsPanel />,
-            defaultOpen: false,
-          },
-          {
-            name: 'TanStack Router',
-            render: <TanStackRouterDevtoolsPanel />,
-            defaultOpen: false,
-          },
-        ]}
-        config={{
-          position: 'bottom-right',
-          defaultOpen: false,
-        }}
-      />
-    <Scripts />
-    </QueryClientProvider>
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
   );
 }
 

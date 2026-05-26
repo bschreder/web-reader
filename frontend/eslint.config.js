@@ -5,7 +5,12 @@ import jsdoc from 'eslint-plugin-jsdoc';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import pluginRouter from '@tanstack/eslint-plugin-router';
+import { fixupPluginRules } from '@eslint/compat';
 import ts from 'typescript';
+
+const reactPlugin = fixupPluginRules(react);
+const reactHooksPlugin = fixupPluginRules(reactHooks);
+const jsxA11yPlugin = fixupPluginRules(jsxA11y);
 
 export default [
   {
@@ -28,10 +33,10 @@ export default [
     plugins: {
       '@typescript-eslint': tseslint.plugin,
       jsdoc,
-      react,
-      'react-hooks': reactHooks,
+      react: reactPlugin,
+      'react-hooks': reactHooksPlugin,
       '@tanstack/router': pluginRouter,
-      'jsx-a11y': jsxA11y,
+      'jsx-a11y': jsxA11yPlugin,
     },
     settings: {
       react: { version: 'detect' },
@@ -103,6 +108,17 @@ export default [
 
       // Custom and Overrides
       semi: ['error', 'always'],
+    },
+  },
+  {
+    files: ['src/lib/ws.ts', 'tests/e2e/**/*.ts'],
+    rules: {
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-param-type': 'off',
+      'jsdoc/require-param-description': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-returns-type': 'off',
+      'jsdoc/require-returns-description': 'off',
     },
   },
 ];

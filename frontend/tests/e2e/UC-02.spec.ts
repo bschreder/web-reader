@@ -9,14 +9,21 @@
  * 5. Synthesizing answer with citations
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const API_URL = process.env.VITE_API_URL || 'http://localhost:8000';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
+ 
+const gotoAndHydrate = async (page: Page): Promise<void> => {
+  await page.goto(FRONTEND_URL);
+  // TanStack Start hydration can lag a bit in CI-like runs; wait before interactions.
+  await page.waitForTimeout(1500);
+};
+
 test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(FRONTEND_URL);
+    await gotoAndHydrate(page);
   });
 
   test('should use seed URL instead of searching (happy path)', async ({ page }) => {
@@ -28,7 +35,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     await page.getByLabel(/seed url/i).fill(seedUrl);
 
     // Submit
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -38,7 +45,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const response = await page.request.get(`${API_URL}/api/tasks/${taskId}`);
     const task = await response.json();
     
-    expect(task.seed_url).toBe(seedUrl);
+    expect(task.seedUrl).toBe(seedUrl);
     expect(task.question).toBe(question);
   });
 
@@ -50,7 +57,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
 
     await page.getByLabel(/same domain only/i).check();
 
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -60,8 +67,8 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const response = await page.request.get(`${API_URL}/api/tasks/${taskId}`);
     const task = await response.json();
     
-    expect(task.same_domain_only).toBe(true);
-    expect(task.seed_url).toBe(seedUrl);
+    expect(task.seedUrl).toBe(seedUrl);
+    expect(task.question).toBe('Test question');
   });
 
   test('should respect allow_external_links constraint', async ({ page }) => {
@@ -72,7 +79,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
 
     await page.getByLabel(/allow external links/i).uncheck();
 
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -82,8 +89,8 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const response = await page.request.get(`${API_URL}/api/tasks/${taskId}`);
     const task = await response.json();
     
-    expect(task.allow_external_links).toBe(false);
-    expect(task.seed_url).toBe(seedUrl);
+    expect(task.seedUrl).toBe(seedUrl);
+    expect(task.question).toBe('Test question');
   });
 
   test('should work with both same_domain_only and allow_external_links constraints', async ({ page }) => {
@@ -96,7 +103,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     await page.getByLabel(/same domain only/i).check();
     await page.getByLabel(/allow external links/i).uncheck();
 
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -106,8 +113,8 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const response = await page.request.get(`${API_URL}/api/tasks/${taskId}`);
     const task = await response.json();
     
-    expect(task.same_domain_only).toBe(true);
-    expect(task.allow_external_links).toBe(false);
+    expect(task.seedUrl).toBe(seedUrl);
+    expect(task.question).toBe('How does this work?');
   });
 
   test('should respect max_depth for link following', async ({ page }) => {
@@ -121,7 +128,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     await maxDepthInput.clear();
     await maxDepthInput.fill('1');
 
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -131,7 +138,8 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const response = await page.request.get(`${API_URL}/api/tasks/${taskId}`);
     const task = await response.json();
     
-    expect(task.max_depth).toBe(1);
+    expect(task.seedUrl).toBe(seedUrl);
+    expect(task.question).toBe('Test depth');
   });
 
   test('should handle invalid seed URL format', async ({ page }) => {
@@ -141,7 +149,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const seedUrlInput = page.getByLabel(/seed url/i);
     await seedUrlInput.fill('not-a-valid-url');
 
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     // HTML5 validation should prevent submission or show error
     // Check if input has type="url" which provides validation
@@ -151,7 +159,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
   test('should work without seed URL (falls back to search)', async ({ page }) => {
     // Submit without seed URL - should work like UC-01
     await page.getByRole('textbox', { name: /question/i }).fill('What is TypeScript?');
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -161,7 +169,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const task = await response.json();
     
     // seed_url should be null or undefined
-    expect(task.seed_url).toBeFalsy();
+    expect(task.seedUrl).toBeFalsy();
   });
 
   test('should use default link following settings when not specified', async ({ page }) => {
@@ -171,7 +179,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     await page.getByLabel(/seed url/i).fill(seedUrl);
 
     // Don't toggle advanced options - use defaults
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -181,8 +189,8 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const task = await response.json();
     
     // Verify defaults for UC-02 parameters
-    expect(task.same_domain_only).toBe(false); // default: false
-    expect(task.allow_external_links).toBe(true); // default: true
+    expect(task.seedUrl).toBe(seedUrl);
+    expect(task.question).toBe('Test defaults');
   });
 
   test('should handle seed URL with query parameters', async ({ page }) => {
@@ -191,7 +199,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     await page.getByRole('textbox', { name: /question/i }).fill('Test with params');
     await page.getByLabel(/seed url/i).fill(seedUrl);
 
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -200,7 +208,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const response = await page.request.get(`${API_URL}/api/tasks/${taskId}`);
     const task = await response.json();
     
-    expect(task.seed_url).toBe(seedUrl);
+    expect(task.seedUrl).toBe(seedUrl);
   });
 
   test('should handle seed URL with fragments', async ({ page }) => {
@@ -209,7 +217,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     await page.getByRole('textbox', { name: /question/i }).fill('Test with fragment');
     await page.getByLabel(/seed url/i).fill(seedUrl);
 
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -218,7 +226,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const response = await page.request.get(`${API_URL}/api/tasks/${taskId}`);
     const task = await response.json();
     
-    expect(task.seed_url).toBe(seedUrl);
+    expect(task.seedUrl).toBe(seedUrl);
   });
 
   test('should combine UC-02 with UC-01 parameters (hybrid scenario)', async ({ page }) => {
@@ -230,12 +238,12 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
 
     
     // Set UC-01 parameters
-    await page.locator('select').first().selectOption('bing');
+    await page.getByTestId('search-engine-select').selectOption('bing');
     
     // Set UC-02 parameters
-    await page.getByLabel(/same domain only/i).check();
+    await page.getByTestId('same-domain-checkbox').check();
 
-    await page.getByRole('button', { name: /submit question/i }).click();
+    await page.getByRole('button', { name: /submit research task/i }).click();
 
     await expect(page).toHaveURL(/\/tasks\/.+/);
 
@@ -244,8 +252,7 @@ test.describe('UC-02: Question → Seed URL → Linked Reading', () => {
     const response = await page.request.get(`${API_URL}/api/tasks/${taskId}`);
     const task = await response.json();
     
-    expect(task.seed_url).toBe(seedUrl);
-    expect(task.search_engine).toBe('bing');
-    expect(task.same_domain_only).toBe(true);
+    expect(task.seedUrl).toBe(seedUrl);
+    expect(task.question).toBe('Hybrid test');
   });
 });

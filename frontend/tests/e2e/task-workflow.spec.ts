@@ -6,11 +6,11 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 test('user submits task and sees history', async ({ page }) => {
   await page.goto(FRONTEND_URL);
 
-  await page.fill('textarea', 'Explain TanStack Start briefly');
-  await page.click('button:has-text("Submit Question")');
+  await page.getByTestId('question-textarea').fill('Explain TanStack Start briefly');
+  await page.getByTestId('submit-button').click();
 
   // Without backend, the app may stay on home. Ensure form stayed interactive.
-  await expect(page.locator('textarea')).toBeVisible();
+  await expect(page.getByTestId('question-textarea')).toBeVisible();
 
   await page.goto(`${FRONTEND_URL}/history`);
   await expect(page.locator('text=Task History')).toBeVisible();

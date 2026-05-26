@@ -9,6 +9,7 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
   // Load env from workspace root (parent directory)
   const env = loadEnv(mode, path.resolve(__dirname, '..'), '');
+  const apiTarget = env.VITE_API_URL || 'http://localhost:8000';
   
   return {
     define: {
@@ -44,6 +45,13 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 3000,
       strictPort: true,
+      proxy: {
+        '/api': {
+          target: apiTarget,
+          changeOrigin: true,
+          ws: true,
+        },
+      },
     },
     preview: {
       host: '0.0.0.0',

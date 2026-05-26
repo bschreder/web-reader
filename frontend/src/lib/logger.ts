@@ -58,10 +58,43 @@ function createLogger(): Logger {
   const logFilename = getLogFilename();
   const logFilePath = path.join(logsDir, logFilename);
 
-  // Determine transport based on target
-  const transport =
-    target === 'console'
-      ? {
+  const baseOptions = {
+    level,
+    timestamp: pino.stdTimeFunctions.isoTime,
+  };
+
+  if (target === 'console') {
+    return pino(
+      baseOptions,
+      pino.transport({
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'SYS:standard',
+          ignore: 'pid,hostname',
+          singleLine: false,
+        },
+      })
+    );
+  }
+
+  if (target === 'file') {
+    return pino(
+      baseOptions,
+      pino.transport({
+        target: 'pino/file',
+        options: {
+          destination: logFilePath,
+        },
+      })
+    );
+  }
+
+  return pino(
+    baseOptions,
+    pino.multistream([
+      {
+        stream: pino.transport({
           target: 'pino-pretty',
           options: {
             colorize: true,
@@ -69,49 +102,18 @@ function createLogger(): Logger {
             ignore: 'pid,hostname',
             singleLine: false,
           },
-        }
-      : target === 'file'
-        ? {
-            target: 'pino/file',
-            options: {
-              destination: logFilePath,
-            },
-          }
-        : [
-            {
-              target: 'pino-pretty',
-              options: {
-                colorize: true,
-                translateTime: 'SYS:standard',
-                ignore: 'pid,hostname',
-                singleLine: false,
-              },
-            },
-            {
-              target: 'pino/file',
-              options: {
-                destination: logFilePath,
-              },
-            },
-          ];
-
-  const logger = pino(
-    {
-      level,
-      timestamp: pino.stdTimeFunctions.isoTime,
-    },
-    target === 'console'
-      ? pino.transport(transport)
-      : target === 'file'
-        ? pino.transport(transport)
-        : pino.multistream(
-            (transport as Array<{ target: string; options?: Record<string, unknown> }>).map((t) =>
-              pino.transport(t)
-            )
-          )
+        }),
+      },
+      {
+        stream: pino.transport({
+          target: 'pino/file',
+          options: {
+            destination: logFilePath,
+          },
+        }),
+      },
+    ])
   );
-
-  return logger;
 }
 
 /**

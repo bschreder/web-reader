@@ -4,11 +4,21 @@
  * during client-side navigation (via React Query).
  */
 
-import { createServerFn } from '@tanstack/react-start/server';
-import type { CreateTaskRequest, TaskResponse, TaskListResponse } from '@src/schemas/task.schema';
+import { createServerFn } from '@tanstack/react-start';
+import {
+  CreateTaskRequestSchema,
+} from '@src/schemas/task.schema';
+import { z } from 'zod';
 
 const API_URL = process.env.VITE_API_URL || 'http://localhost:8000';
 const API_TIMEOUT = 30000;
+const TaskIdInputSchema = z.string().min(1);
+const ListTasksInputSchema = z
+  .object({
+    offset: z.number().int().nonnegative().optional(),
+    limit: z.number().int().positive().optional(),
+  })
+  .optional();
 
 /**
  * Fetch a single task by ID.
@@ -18,8 +28,8 @@ const API_TIMEOUT = 30000;
 export const getTaskServerFn = createServerFn({
   method: 'GET',
 })
-  .middleware(async () => undefined)
-  .handler(async (taskId: string): Promise<TaskResponse> => {
+  .inputValidator(TaskIdInputSchema)
+  .handler(async ({ data: taskId }) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
@@ -37,7 +47,7 @@ export const getTaskServerFn = createServerFn({
         );
       }
 
-      const data: TaskResponse = await res.json();
+      const data = await res.json();
       return data;
     } finally {
       clearTimeout(timeoutId);
@@ -53,9 +63,10 @@ export const getTaskServerFn = createServerFn({
 export const listTasksServerFn = createServerFn({
   method: 'GET',
 })
-  .middleware(async () => undefined)
-  .handler(
-    async (offset: number = 0, limit: number = 100): Promise<TaskListResponse> => {
+  .inputValidator(ListTasksInputSchema)
+  .handler(async ({ data }) => {
+      const offset = data?.offset ?? 0;
+      const limit = data?.limit ?? 100;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
@@ -77,13 +88,12 @@ export const listTasksServerFn = createServerFn({
           );
         }
 
-        const data: TaskListResponse = await res.json();
+        const data = await res.json();
         return data;
       } finally {
         clearTimeout(timeoutId);
       }
-    }
-  );
+    });
 
 /**
  * Create a new research task.
@@ -93,9 +103,8 @@ export const listTasksServerFn = createServerFn({
 export const createTaskServerFn = createServerFn({
   method: 'POST',
 })
-  .middleware(async () => undefined)
-  .handler(
-    async (req: CreateTaskRequest): Promise<{ id: string }> => {
+  .inputValidator(CreateTaskRequestSchema)
+  .handler(async ({ data: req }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
@@ -120,8 +129,7 @@ export const createTaskServerFn = createServerFn({
       } finally {
         clearTimeout(timeoutId);
       }
-    }
-  );
+    });
 
 /**
  * Cancel an existing task.
@@ -129,10 +137,10 @@ export const createTaskServerFn = createServerFn({
  * @returns Promise that resolves when task is cancelled
  */
 export const cancelTaskServerFn = createServerFn({
-  method: 'DELETE',
+  method: 'POST',
 })
-  .middleware(async () => undefined)
-  .handler(async (taskId: string): Promise<void> => {
+  .inputValidator(TaskIdInputSchema)
+  .handler(async ({ data: taskId }) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 

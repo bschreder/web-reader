@@ -7,7 +7,7 @@ import {
 } from '@src/schemas/task.schema';
 import { safeParseData } from './safeParseData';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_BASE = '/api';
 
 /**
  * Create a new research task.
@@ -18,7 +18,7 @@ export async function createTask(req: CreateTaskRequest): Promise<{ taskId: stri
   // Validate request data before sending
   const validatedReq = CreateTaskRequestSchema.parse(req);
   
-  const res = await fetch(`${API_URL}/api/tasks`, {
+  const res = await fetch(`${API_BASE}/tasks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(validatedReq),
@@ -37,7 +37,7 @@ export async function createTask(req: CreateTaskRequest): Promise<{ taskId: stri
  * @returns {Promise<TaskDetail>} A promise resolving to the task details
  */
 export async function getTask(id: string): Promise<TaskDetail> {
-  const res = await fetch(`${API_URL}/api/tasks/${id}`);
+  const res = await fetch(`${API_BASE}/tasks/${id}`);
   if (!res.ok) throw new Error(`Failed to get task: ${res.status}`);
   
   const data = await res.json();
@@ -54,7 +54,7 @@ export async function getTask(id: string): Promise<TaskDetail> {
  * @returns {Promise<TaskSummary[]>} A promise resolving to an array of task summaries
  */
 export async function listTasks(): Promise<TaskSummary[]> {
-  const res = await fetch(`${API_URL}/api/history`);
+  const res = await fetch(`${API_BASE}/history`);
   if (!res.ok) throw new Error(`Failed to list tasks: ${res.status}`);
   
   const data = await res.json();
@@ -72,6 +72,6 @@ export async function listTasks(): Promise<TaskSummary[]> {
  * @returns {Promise<void>} A promise that resolves when the task is cancelled
  */
 export async function cancelTask(id: string): Promise<void> {
-  const res = await fetch(`${API_URL}/api/tasks/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Failed to cancel task: ${res.status}`);
 }

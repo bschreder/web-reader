@@ -2,7 +2,21 @@ import type { StreamEvent } from '@src/schemas/task.schema';
 import { StreamEventSchema } from '@src/schemas/task.schema';
 import { safeParseData } from './safeParseData';
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000';
+const WS_PATH_PREFIX = '/api';
+const DEFAULT_WS_BASE = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000';
+
+ 
+const buildWebSocketUrl = (path: string): string => {
+  if (typeof window !== 'undefined' && window.location) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}${path}`;
+  }
+
+  const base = DEFAULT_WS_BASE.endsWith('/')
+    ? DEFAULT_WS_BASE.slice(0, -1)
+    : DEFAULT_WS_BASE;
+  return `${base}${path}`;
+};
 
 /**
  * Options for WebSocketManager initialization.
@@ -33,7 +47,7 @@ export class WebSocketManager {
    * @returns {void}
    */
   connect(): void {
-    const url = `${WS_URL}/api/tasks/${this.opts.taskId}/stream`;
+    const url = buildWebSocketUrl(`${WS_PATH_PREFIX}/tasks/${this.opts.taskId}/stream`);
     this.ws = new WebSocket(url);
     this.ws.onerror = (ev): void => {
       console.error('websocket error', ev);

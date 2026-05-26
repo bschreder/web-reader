@@ -10,7 +10,7 @@ import { createTask } from '@src/lib/api';
 
 // Mock the createTask API function before importing TaskForm
 vi.mock('@src/lib/api', () => ({
-  createTask: vi.fn().mockResolvedValue({ id: 'test-task-123' }),
+  createTask: vi.fn().mockResolvedValue({ taskId: 'test-task-123' }),
 }));
 
 /**
@@ -108,15 +108,15 @@ describe('TaskForm (browser)', () => {
     await cleanup();
   });
 
-  it('submits form when Enter key is pressed in question textarea', async () => {
+  it('submits form when Ctrl+Enter key is pressed in question textarea', async () => {
     const screen = await render(<App />);
 
     const questionTextarea = screen.getByTestId('question-textarea');
     await expect.element(questionTextarea).toBeVisible();
     
-    // Fill in the question field and press Enter to submit
+    // Fill in the question field and press Ctrl+Enter to submit
     await userEvent.click(questionTextarea);
-    await userEvent.keyboard('What is the capital of France?{Enter}');
+    await userEvent.keyboard('What is the capital of France?{Control>}{Enter}{/Control}');
 
     // Verify that createTask was called with the correct payload
     await expect(createTask).toHaveBeenCalledOnce();
