@@ -4,20 +4,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Write-Host "Starting docker-compose services..." -ForegroundColor Cyan
+Write-Host "Deprecated entrypoint: delegating to infra/scripts/wr.ps1 up --infra" -ForegroundColor Yellow
 
-$composeDir = Join-Path $PSScriptRoot '.'
-$envFile = Join-Path $PSScriptRoot '..' | Join-Path -ChildPath '.env'
-
-Push-Location $composeDir
-try {
-  if ($Build) {
-    docker compose --env-file $envFile up -d --build
-  } else {
-    docker compose --env-file $envFile up -d
-  }
-} finally {
-  Pop-Location
+$wr = Join-Path $PSScriptRoot '..\infra\scripts\wr.ps1'
+$args = @('up', '--infra')
+if ($Build) {
+  $args += '--build'
 }
 
-Write-Host "Compose started." -ForegroundColor Green
+& $wr @args

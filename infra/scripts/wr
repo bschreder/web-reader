@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+COMPOSE_BASE="${ROOT_DIR}/infra/compose/compose.yaml"
+COMPOSE_DEV="${ROOT_DIR}/infra/compose/compose.dev.yaml"
+COMPOSE_PROD="${ROOT_DIR}/infra/compose/compose.prod.yaml"
+ENV_FILE="${ROOT_DIR}/.env"
+
+if [[ ! -f "${ENV_FILE}" ]]; then
+  echo "Missing ${ENV_FILE}. Copy .env.example to .env first." >&2
+  exit 1
+fi
+
+compose_cmd=(docker compose -f "${COMPOSE_BASE}" --env-file "${ENV_FILE}")
+
+usage() {
+  cat <<'EOF'
+wr - Web Reader command wrapper
+
+Commands:
+  wr up [--infra|--app] [--debug] [--build]
+  wr debug up [--infra|--app] [--build]
+  wr down
+  wr logs [service]
+  wr lint
+  wr test <unit|integration|e2e|all>
+EOF
+}
+
+run_tests() {
+  local level="$1"
+  case "${level}" in
+    unit)
+      (cd "${ROOT_DIR}/apps/fastmcp" && uv run pytest tests/unit/ -v)
+      (cd "${ROOT_DIR}/apps/langchain" && uv run pytest tests/unit/ -v)
+      (cd "${ROOT_DIR}/apps/backend" && uv run pytest tests/unit/ -v)
+      (cd "${ROOT_DIR}/apps/frontend" && npm run test:unit)
+      ;;
+    integration)
+      (cd "${ROOT_DIR}/apps/fastmcp" && uv run pytest tests/integration/ -v)
+      (cd "${ROOT_DIR}/apps/langchain" && uv run pytest tests/integration/ -v)
+      (cd "${ROOT_DIR}/apps/backend" && uv run pytest tests/integration/ -v)
+      ;;
+    e2e)
+      (cd "${ROOT_DIR}/apps/fastmcp" && uv run pytest tests/e2e/ -v)
+      (cd "${ROOT_DIR}/apps/langchain" && uv run pytest tests/e2e/ -v)
+      (cd "${ROOT_DIR}/apps/backend" && uv run pytest tests/e2e/ -v)
+      (cd "${ROOT_DIR}/apps/frontend" && npm run test:e2e)
+      ;;
+    all)
+      (cd "${ROOT_DIR}" && ./scripts/test-all.sh all)
+      ;;
+    *)
+      echo "Unknown test level: ${level}" >&2
+      exit 1
+      ;;
+  esac
+}
+
+if [[ $# -lt 1 ]]; then
+  usage
+  exit 1
+fi
+
+cmd="$1"
+shift
+
+case "${cmd}" in
+  up)
+    profiles=(--profile infra --profile app)
+    use_debug=false
+    build=false
+    app_only=false
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --infra)
+          profiles=(--profile infra)
+          ;;
+        --app)
+          profiles=(--profile infra --profile app)
+          app_only=true
+          ;;
+        --debug)
+          use_debug=true
+          ;;
+        --build)
+          build=true
+          ;;
+        *)
+          echo "Unknown option: $1" >&2
+          exit 1
+          ;;
+      esac
+      shift
+    done
+    local_cmd=("${compose_cmd[@]}")
+    if [[ "${use_debug}" == true ]]; then
+      local_cmd+=( -f "${COMPOSE_DEV}" )
+    fi
+    local_cmd+=("${profiles[@]}" up -d)
+    if [[ "${build}" == true ]]; then
+      local_cmd+=(--build)
+    fi
+    if [[ "${app_only}" == true ]]; then
+      local_cmd+=(frontend backend langchain fastmcp)
+    fi
+    "${local_cmd[@]}"
+    ;;
+  debug)
+    if [[ "${1:-}" != "up" ]]; then
+      echo "Usage: wr debug up [--infra|--app] [--build]" >&2
+      exit 1
+    fi
+    shift
+    set -- up --debug "$@"
+    exec "$0" "$@"
+    ;;
+  down)
+    "${compose_cmd[@]}" --profile infra --profile app down
+    ;;
+  logs)
+    if [[ $# -gt 0 ]]; then
+      "${compose_cmd[@]}" logs -f "$1"
+    else
+      "${compose_cmd[@]}" logs -f
+    fi
+    ;;
+  lint)
+    (cd "${ROOT_DIR}/apps/frontend" && npm run lint && npm run typecheck)
+    ;;
+  test)
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: wr test <unit|integration|e2e|all>" >&2
+      exit 1
+    fi
+    run_tests "$1"
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac

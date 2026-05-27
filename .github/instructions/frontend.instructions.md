@@ -1,11 +1,11 @@
 ---
-applyTo: ./frontend/**/*.{ts,tsx}
+applyTo: ./apps/frontend/**/*.{ts,tsx}
 description: This file describes the post-change validation steps for Frontend TypeScript/React files.
 ---
 
 # Frontend - Post-Change Validation Instructions
 
-**Scope**: This applies to all TypeScript/React files in `./frontend/**/*.{ts,tsx}`
+**Scope**: This applies to all TypeScript/React files in `./apps/frontend/**/*.{ts,tsx}`
 
 Verify that all selectable and clickable elements in the UI have appropriate ARIA labels and roles for accessibility and have an associated `data-testid` attribute for testing.
 
@@ -46,7 +46,7 @@ Always validate dependencies from left to right before validating the current pr
 ## 1. Navigate to Frontend Directory
 
 ```bash
-cd ./frontend
+cd ./apps/frontend
 ```
 
 ## 2. Run ESLint
@@ -143,7 +143,7 @@ For rapid validation during development:
 
 ```bash
 # Full validation in one go (from frontend directory)
-cd ./frontend && \
+cd ./apps/frontend && \
   npm run lint:fix && \
   npm run typecheck && \
   npm run test:unit && \

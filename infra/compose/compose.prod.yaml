@@ -1,0 +1,46 @@
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:-web-reader-frontend}:${IMAGE_TAG:-latest}
+    build:
+      target: prod
+    environment:
+      NODE_ENV: production
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  backend:
+    image: ${BACKEND_IMAGE:-web-reader-backend}:${IMAGE_TAG:-latest}
+    build:
+      target: prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  langchain:
+    image: ${LANGCHAIN_IMAGE:-web-reader-langchain}:${IMAGE_TAG:-latest}
+    build:
+      target: prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  fastmcp:
+    image: ${FASTMCP_IMAGE:-web-reader-fastmcp}:${IMAGE_TAG:-latest}
+    build:
+      target: prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true

@@ -51,7 +51,7 @@ Use `./scripts/test-all.sh all` for full release-style validation because it inc
 
 ### FastMCP
 
-Run from `./fastmcp`:
+Run from `./apps/fastmcp`:
 
 ```bash
 uv run ruff check .
@@ -62,7 +62,7 @@ uv run pytest tests/e2e/ -v
 
 ### LangChain
 
-Run from `./langchain`:
+Run from `./apps/langchain`:
 
 ```bash
 uv run ruff check .
@@ -73,7 +73,7 @@ uv run pytest tests/e2e/ -v
 
 ### Backend
 
-Run from `./backend`:
+Run from `./apps/backend`:
 
 ```bash
 uv run ruff check .
@@ -84,7 +84,7 @@ uv run pytest tests/e2e/ -v
 
 ### Frontend
 
-Run from `./frontend`:
+Run from `./apps/frontend`:
 
 ```bash
 npm run lint

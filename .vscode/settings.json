@@ -13,7 +13,7 @@
   "chat.tools.edits.autoApprove": {
     // "**/*": false,
     "**/.github/*.md": true,
-    "**/frontend/project.json": true,
+    "**/apps/frontend/project.json": true,
     "**/.env": true
   },
   "chat.tools.terminal.autoApprove": {
@@ -65,23 +65,23 @@
   // JavaScript/TypeScript testing (Vitest)
   "vitest.enable": true,
   "vitest.commandLine": "npm test --",
-  "playwright.configPath": "frontend/playwright.config.ts",
+  "playwright.configPath": "apps/frontend/playwright.config.ts",
 
   
   // Test explorer UI settings
   "testing.automaticallyOpenPeekView": "failureInVisibleDocument",
   "testing.openTesting": "neverOpen",
   
-  // Python testing is configured per service folder (backend/langchain/fastmcp)
+  // Python testing is configured per service folder (apps/backend, apps/langchain, apps/fastmcp)
   // to avoid root-folder discovery failures.
   "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": false,
   
   // Python analysis - resolve imports from service src/ directories
   "python.analysis.extraPaths": [
-    "backend/src",
-    "langchain/src",
-    "fastmcp/src"
+    "apps/backend/src",
+    "apps/langchain/src",
+    "apps/fastmcp/src"
   ],
   
   // Per-project Python settings

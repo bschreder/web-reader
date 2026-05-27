@@ -1,10 +1,11 @@
---- 
-applyTo: ./langchain/**/*.py
+---
+applyTo: ./apps/langchain/**/*.py
 description: This file describes the post-change validation steps for LangChain Python files.
 ---
+
 # LangChain - Post-Change Validation Instructions
 
-**Scope**: This applies to all Python files in `./langchain/**/*.py`
+**Scope**: This applies to all Python files in `./apps/langchain/**/*.py`
 
 After making any changes or additions to Python files in the langchain directory, you **MUST** run the following validation steps in order:
 
@@ -13,9 +14,11 @@ After making any changes or additions to Python files in the langchain directory
 **Before validating LangChain changes**, check if any changes were made to dependent projects:
 
 ### If FastMCP was modified:
+
 LangChain depends on FastMCP (calls FastMCP tools via MCP protocol). If FastMCP files were changed, you **MUST** first execute all steps in `.github/instructions/fastmcp.instructions.md` to ensure FastMCP is working correctly before proceeding with LangChain validation.
 
 ### Dependency Chain:
+
 ```
 FastMCP (MCP tools) → LangChain (orchestration) → Backend (API) → Frontend
 ```
@@ -27,7 +30,7 @@ Always validate dependencies from left to right before validating the current pr
 ## 1. Navigate to LangChain Directory
 
 ```bash
-cd ./langchain
+cd ./apps/langchain
 ```
 
 ## 2. Run Ruff Linter
@@ -104,6 +107,7 @@ cd ..
 ```
 
 This will:
+
 - Rebuild only the langchain Docker image
 - Start langchain service in debug mode with debugpy port 5672 exposed
 - Validate that the langchain service starts correctly and integrates with other services
@@ -124,7 +128,7 @@ For rapid validation during development:
 
 ```bash
 # Full validation in one go (from langchain directory)
-cd ./langchain && \
+cd ./apps/langchain && \
   uv run ruff check --fix . && \
   uv run ruff format . && \
   uv run pytest -v && \
@@ -144,11 +148,13 @@ cd ./langchain && \
 ## Common Issues and Solutions
 
 ### Ruff Errors
+
 - Import order issues: Let ruff auto-fix with `--fix`
 - Line length: Consider refactoring long lines for readability
 - Unused imports: Remove them or use `# noqa: F401` if intentional
 
 ### Test Failures
+
 - MCP connection: Ensure FastMCP service is running and accessible
 - Async issues: Verify all async functions are properly awaited
 - LLM timeout: Check Ollama service is running and model is loaded
@@ -156,6 +162,7 @@ cd ./langchain && \
 - Callback issues: Ensure WebSocket callbacks are non-blocking (use `asyncio.create_task`)
 
 ### Docker Build Failures
+
 - Dependency conflicts: Check pyproject.toml for version constraints
 - Port conflicts: Ensure port 8001, 5672 are available
 - Network issues: Verify external-services-network exists
@@ -171,6 +178,7 @@ LangChain depends on and is depended upon by:
 - **Config files**: LLM settings, agent config from `../config/` and root `.env`
 
 ### Critical Integration Flow:
+
 1. **Frontend** sends task → **Backend** → **LangChain** → **FastMCP** → **Playwright**
 2. Results flow back with streaming callbacks for real-time updates
 
@@ -179,21 +187,25 @@ Always test the complete integration flow, not just isolated components.
 ## LangChain-Specific Validation
 
 ### Agent Behavior
+
 - Verify agent correctly selects tools based on task
 - Check reasoning steps are logged appropriately
 - Ensure tool results are properly parsed and used
 
 ### Streaming Callbacks
+
 - Confirm WebSocket events are emitted for all stages (thinking, tool_call, tool_result, complete, error)
 - Verify callbacks are non-blocking (use `asyncio.create_task`)
 - Check error recovery and structured error responses
 
 ### Memory and State
+
 - Test conversation memory if implemented
 - Verify task context is maintained throughout execution
 - Check cleanup of resources after task completion
 
 ### Tool Integration
+
 - Validate all MCP tools are properly registered
 - Test tool error handling and recovery
 - Ensure tool parameters are correctly formatted and validated

@@ -1,15 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-Write-Host "Stopping docker-compose services..." -ForegroundColor Cyan
+Write-Host "Deprecated entrypoint: delegating to infra/scripts/wr.ps1 down --infra" -ForegroundColor Yellow
 
-$composeDir = Join-Path $PSScriptRoot '.'
-$envFile = Join-Path $PSScriptRoot '..' | Join-Path -ChildPath '.env'
-
-Push-Location $composeDir
-try {
-  docker compose --env-file $envFile down
-} finally {
-  Pop-Location
-}
-
-Write-Host "Compose stopped." -ForegroundColor Green
+$wr = Join-Path $PSScriptRoot '..\infra\scripts\wr.ps1'
+& $wr down --infra

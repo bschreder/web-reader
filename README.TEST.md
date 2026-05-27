@@ -65,7 +65,7 @@ Each service follows a standardized directory structure:
 **Frontend Structure** (TypeScript/React):
 
 ```
-frontend/
+apps/frontend/
 ├── tests/
 │   ├── unit/          # Unit tests (Vitest in Node environment)
 │   ├── browser/       # Browser tests (Vitest + Playwright)
@@ -93,7 +93,7 @@ cd langchain && uv run pytest tests/unit tests/integration --cov=src --cov-repor
 cd backend && uv run pytest tests/unit tests/integration --cov=src --cov-report=term
 
 # Frontend (both unit and browser tests)
-cd frontend && npm run test:coverage
+cd apps/frontend && npm run test:coverage
 ```
 
 ### View Coverage Reports
@@ -111,7 +111,7 @@ open langchain/coverage/html/index.html
 open backend/coverage/html/index.html
 
 # Frontend
-open frontend/coverage/index.html
+open apps/frontend/coverage/index.html
 ```
 
 # Run all tests (unit + integration + e2e)
@@ -220,7 +220,7 @@ uv run ruff check --fix . && uv run ruff format . && uv run pytest tests/unit/ t
 #### Frontend Tests
 
 ```bash
-cd /workspaces/web-reader/frontend
+cd /workspaces/web-reader/apps/frontend
 
 # Unit tests (Vitest)
 npm run test:unit
@@ -262,32 +262,32 @@ Start the dev stack (optional, for full e2e):
 
 ```bash
 cd /workspaces/web-reader
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app up -d
 ```
 
 #### Run Tests in Containers
 
 ```bash
 cd /workspaces/web-reader
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app up -d
 ```
 
 #### Running Tests in Containers
 
 ````bash
 # FastMCP unit tests
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp pytest tests/unit --cov=src --cov-branch
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app exec fastmcp pytest tests/unit --cov=src --cov-branch
 
 # Backend unit tests
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend pytest tests/unit --cov=src --cov-branch
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app exec backend pytest tests/unit --cov=src --cov-branch
 
 # LangChain unit tests
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain pytest tests/unit --cov=src --cov-branch
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app exec langchain pytest tests/unit --cov=src --cov-branch
 
 # Frontend unit tests
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:unit
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:browser
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:e2e
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app exec frontend npm run test:unit
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app exec frontend npm run test:browser
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app exec frontend npm run test:e2e
 
 ## End-to-End Workflow (Typical Use Case)
 
@@ -302,7 +302,7 @@ docker compose up -d
 
 # Start the application stack (dev overlay for hot reload)
 cd /workspaces/web-reader
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d --build
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app up -d --build
 ````
 
 ### Run the E2E test
@@ -438,7 +438,7 @@ cd /workspaces/web-reader/langchain
 pytest tests/unit --cov=src --cov-branch --cov-report=html
 
 # Frontend coverage
-cd /workspaces/web-reader/frontend
+cd /workspaces/web-reader/apps/frontend
 npm test -- --coverage
 open coverage/index.html
 ```
@@ -540,10 +540,10 @@ jobs:
       - uses: actions/checkout@v3
       - name: Run unit tests
         run: |
-          docker compose -f docker/docker-compose.yml build
-          docker compose -f docker/docker-compose.yml run fastmcp pytest tests/unit --cov=src --cov-branch
-          docker compose -f docker/docker-compose.yml run backend pytest tests/unit --cov=src --cov-branch
-          docker compose -f docker/docker-compose.yml run langchain pytest tests/unit --cov=src --cov-branch
+          docker compose -f infra/compose/compose.yaml --env-file .env --profile infra --profile app build
+          docker compose -f infra/compose/compose.yaml --env-file .env --profile infra --profile app run fastmcp pytest tests/unit --cov=src --cov-branch
+          docker compose -f infra/compose/compose.yaml --env-file .env --profile infra --profile app run backend pytest tests/unit --cov=src --cov-branch
+          docker compose -f infra/compose/compose.yaml --env-file .env --profile infra --profile app run langchain pytest tests/unit --cov=src --cov-branch
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -554,8 +554,8 @@ jobs:
         run: docker compose -f container/docker-compose.yml up -d
       - name: Run integration tests
         run: |
-          docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
-          docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec -T fastmcp pytest tests/integration -v
+          docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app up -d
+          docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app exec -T fastmcp pytest tests/integration -v
 ```
 
 ## Troubleshooting

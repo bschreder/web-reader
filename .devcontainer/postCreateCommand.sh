@@ -12,22 +12,22 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 
 # Install frontend dependencies
-if [ -d "/workspaces/web-reader/frontend" ]; then
+if [ -d "/workspaces/web-reader/apps/frontend" ]; then
   # Clean up stale contents and package-lock
-  if [ -d "/workspaces/web-reader/frontend/node_modules" ]; then
-    find /workspaces/web-reader/frontend/node_modules -mindepth 1 -delete 2>/dev/null || true
+  if [ -d "/workspaces/web-reader/apps/frontend/node_modules" ]; then
+    find /workspaces/web-reader/apps/frontend/node_modules -mindepth 1 -delete 2>/dev/null || true
   fi
-  rm -f /workspaces/web-reader/frontend/package-lock.json
+  rm -f /workspaces/web-reader/apps/frontend/package-lock.json
   npm cache clean --force 2>/dev/null || true
   
   # Install fresh dependencies
-  npm --prefix /workspaces/web-reader/frontend install --loglevel=warn
-  npx --prefix /workspaces/web-reader/frontend playwright install --with-deps chromium
+  npm --prefix /workspaces/web-reader/apps/frontend install --loglevel=warn
+  npx --prefix /workspaces/web-reader/apps/frontend playwright install --with-deps chromium
 fi
 
 # Install Python dependencies for all services using uv
 for svc in backend fastmcp langchain; do
-  svcdir="/workspaces/web-reader/$svc"
+  svcdir="/workspaces/web-reader/apps/$svc"
   if [ -d "$svcdir" ] && [ -f "$svcdir/pyproject.toml" ]; then
     echo "Installing Python dependencies for $svc via uv..."
     # Clean up any stale venv to avoid permission issues

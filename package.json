@@ -1,0 +1,25 @@
+{
+  "name": "web-reader-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Root command facade for the Web Reader monorepo",
+  "scripts": {
+    "wr:up": "pwsh -File ./infra/scripts/wr.ps1 up",
+    "wr:up:infra": "pwsh -File ./infra/scripts/wr.ps1 up -Infra",
+    "wr:up:app": "pwsh -File ./infra/scripts/wr.ps1 up -App",
+    "wr:debug": "pwsh -File ./infra/scripts/wr.ps1 debug up",
+    "wr:down": "pwsh -File ./infra/scripts/wr.ps1 down",
+    "wr:logs": "pwsh -File ./infra/scripts/wr.ps1 logs",
+    "wr:lint": "pwsh -File ./infra/scripts/wr.ps1 lint",
+    "wr:test:unit": "pwsh -File ./infra/scripts/wr.ps1 test unit",
+    "wr:test:integration": "pwsh -File ./infra/scripts/wr.ps1 test integration",
+    "wr:test:e2e": "pwsh -File ./infra/scripts/wr.ps1 test e2e",
+    "wr:test:all": "pwsh -File ./infra/scripts/wr.ps1 test all",
+    "frontend:lint": "npm --prefix ./apps/frontend run lint",
+    "frontend:typecheck": "npm --prefix ./apps/frontend run typecheck",
+    "frontend:test:unit": "npm --prefix ./apps/frontend run test:unit"
+  },
+  "workspaces": [
+    "apps/frontend"
+  ]
+}

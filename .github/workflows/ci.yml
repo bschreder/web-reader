@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  frontend-gates:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: apps/frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm install --legacy-peer-deps
+      - name: Frontend lint
+        run: npm run lint
+      - name: Frontend typecheck
+        run: npm run typecheck
+      - name: Frontend unit tests
+        env:
+          VITE_API_URL: /api
+          VITE_WS_URL: ws://localhost:3000
+          INTERNAL_API_URL: http://backend:8000
+          FRONTEND_PUBLIC_URL: http://localhost:3000
+        run: npm run test:unit
+
+  python-gates:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [fastmcp, langchain, backend]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install uv
+        run: pip install uv
+      - name: Lint
+        run: uv run ruff check .
+      - name: Unit tests
+        run: uv run pytest tests/unit/ -v
+
+  integration-e2e-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare env
+        run: cp .env.example .env
+      - name: Start stack (debug profile)
+        run: docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app up -d --build
+      - name: Wait for services
+        run: |
+          for i in {1..40}; do
+            curl -sf http://localhost:3101/health && curl -sf http://localhost:8001/health && curl -sf http://localhost:8000/health && exit 0
+            sleep 5
+          done
+          echo "Health checks failed" >&2
+          exit 1
+      - name: E2E smoke path
+        run: |
+          curl -sf http://localhost:8000/health
+          curl -sf http://localhost:8001/health
+          curl -sf http://localhost:3101/health
+      - name: Stop stack
+        if: always()
+        run: docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app down -v --remove-orphans

@@ -2,54 +2,110 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Attach Backend (debugpy)",
+      "name": "Debug (Devcontainer): Backend",
       "type": "debugpy",
       "request": "attach",
-      // "connect": { "host": "localhost", "port": 5671 },
       "connect": { "host": "backend", "port": 5671 },
       "justMyCode": false,
       "pathMappings": [
         {
-          "localRoot": "${workspaceFolder}/backend",
+          "localRoot": "${workspaceFolder}/apps/backend",
           "remoteRoot": "/app"
         }
       ]
     },
     {
-      "name": "Attach LangChain (debugpy)",
+      "name": "Debug (Devcontainer): LangChain",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": { "host": "langchain", "port": 5672 },
+      "justMyCode": false,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/apps/langchain",
+          "remoteRoot": "/app"
+        }
+      ]
+    },
+    {
+      "name": "Debug (Devcontainer): FastMCP",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": { "host": "fastmcp", "port": 5673 },
+      "justMyCode": false,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/apps/fastmcp",
+          "remoteRoot": "/app"
+        }
+      ]
+    },
+    {
+      "name": "Debug (Host): Backend",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": { "host": "localhost", "port": 5671 },
+      "justMyCode": false,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/apps/backend",
+          "remoteRoot": "/app"
+        }
+      ]
+    },
+    {
+      "name": "Debug (Host): LangChain",
       "type": "debugpy",
       "request": "attach",
       "connect": { "host": "localhost", "port": 5672 },
-      "justMyCode": true
+      "justMyCode": false,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/apps/langchain",
+          "remoteRoot": "/app"
+        }
+      ]
     },
     {
-      "name": "Attach FastMCP (debugpy)",
+      "name": "Debug (Host): FastMCP",
       "type": "debugpy",
       "request": "attach",
       "connect": { "host": "localhost", "port": 5673 },
-      "justMyCode": true
+      "justMyCode": false,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/apps/fastmcp",
+          "remoteRoot": "/app"
+        }
+      ]
     },
     {
-      "name": "Attach Frontend (Node Inspect)",
+      "name": "Debug Frontend (Node Inspect)",
       "type": "node",
       "request": "attach",
       "port": 9229,
+      "address": "localhost",
+      "localRoot": "${workspaceFolder}/apps/frontend",
+      "remoteRoot": "/app",
       "restart": true,
       "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug (Devcontainer): Python Services",
+      "configurations": [
+        "Debug (Devcontainer): Backend",
+        "Debug (Devcontainer): LangChain",
+        "Debug (Devcontainer): FastMCP"
+      ]
     },
     {
-      "name": "Debug Frontend (Devcontainer)",
-      "type": "node",
-      "request": "attach",
-      "address": "localhost",
-      "port": 9229,
-      "localRoot": "${workspaceFolder}/frontend",
-      "remoteRoot": "/workspaces/web-reader/frontend",
-      "restart": true,
-      "skipFiles": ["<node_internals>/**"],
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/frontend/**",
-        "!**/node_modules/**"
+      "name": "Debug (Host): Python Services",
+      "configurations": [
+        "Debug (Host): Backend",
+        "Debug (Host): LangChain",
+        "Debug (Host): FastMCP"
       ]
     }
   ]

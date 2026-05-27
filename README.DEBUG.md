@@ -1,224 +1,80 @@
 # Web Reader Debug Guide
 
-This guide explains how to run and debug all services (frontend, backend API, LangChain orchestrator, FastMCP tool server, and external infra: Ollama + Playwright) using the debug-enabled root scripts.
+This is the canonical debug workflow for the monorepo.
 
-## Overview
+## Command Surface
 
-Services:
+Use the wrapper commands only.
 
-- Frontend (Vite + React) — port 3000, optional Node inspect port 9229 (commented by default)
-- Backend API (FastAPI) — port 8000, debugpy 5671 when `-Debug`
-- LangChain Orchestrator — internal port 8001, debugpy 5672 when `-Debug`
-- FastMCP Tool Server — internal port 3000, debugpy 5673 when `-Debug`
-- Ollama (LLM) — port 11434
-- Playwright server — port 3002
+- Full debug stack: `./infra/scripts/wr.ps1 debug up --build`
+- Infra only: `./infra/scripts/wr.ps1 up --infra --build`
+- App only: `./infra/scripts/wr.ps1 up --app --build`
+- Stop stack: `./infra/scripts/wr.ps1 down`
+- Stream logs: `./infra/scripts/wr.ps1 logs [service]`
 
-Debug mode (`-Debug`) replaces container commands with `python -m debugpy --wait-for-client --listen 0.0.0.0:<port> server.py` for Python services.
+## Environment Setup
 
-## Prerequisites
+Root `.env` is the active runtime file used by compose and debug runs.
 
-- Docker and Docker Compose installed (Windows / macOS / Linux).
-- VS Code + Python extension.
-- (Optional) Dev Containers extension if developing inside a container.
+If you want to reset it to the canonical contract, copy [.env.example](.env.example) over [.env](.env).
 
-## Production vs Debug Builds
+[`infra/env/.env.example`](infra/env/.env.example) is the checked-in template for environment bootstrapping, and [`infra/env/.env.prod.example`](infra/env/.env.prod.example) is the production variant.
 
-The project supports two distinct build modes:
+The shared logging keys are `LOG_LEVEL` and `LOG_TARGET`; they are global and consumed by all services.
 
-### Production Mode (Default)
+Legacy entrypoints (`start.ps1`, `stop.ps1`, `container/*`, `docker/*`) are compatibility wrappers and should not be used for new workflows.
 
-- Optimized builds using multi-stage Dockerfiles
-- Frontend: Built static assets served by Node SSR (target: `prod`)
-- Backend: Minimal Python runtime with production dependencies (target: `prod`)
-- No volume mounts, no debug ports, no hot reload
-- Start with: `./start.ps1` or `./start.ps1 -Rebuild`
+## Debug Ports
 
-### Debug Mode
+- Backend debugpy: `5671`
+- LangChain debugpy: `5672`
+- FastMCP debugpy: `5673`
+- Frontend Node inspect: `9229`
 
-- Development builds with debugging and hot reload enabled (target: `dev`)
-- Frontend: Vite dev server with HMR, optional Node inspect on port 9229
-- Backend: uvicorn with `--reload`, debugpy on port 5671
-- LangChain: watchfiles auto-restart, debugpy on port 5672
-- FastMCP: watchfiles auto-restart, debugpy on port 5673
-- Source code mounted as volumes for live editing
-- Start with: `./start.ps1 -Debug` or `./start.ps1 -Debug -Rebuild`
+## VS Code Launch Profiles
 
-## Starting in Debug Mode
+Use [.vscode/launch.json](.vscode/launch.json):
 
-````powershell
-./start.ps1 -Debug
+- `Debug (Devcontainer): Backend`
+- `Debug (Devcontainer): LangChain`
+- `Debug (Devcontainer): FastMCP`
+- `Debug (Host): Backend`
+- `Debug (Host): LangChain`
+- `Debug (Host): FastMCP`
+- `Debug Frontend (Node Inspect)`
 
-The script uses `docker-compose.override.yml` when `-Debug` is specified.
+And compounds:
 
-**Production build:**
-```powershell
-./start.ps1
-# Or force rebuild
-./start.ps1 -Rebuild
-````
+- `Debug (Devcontainer): Python Services`
+- `Debug (Host): Python Services`
 
-**Debug build:**
+## Recommended Flows
 
-```powershell
-./start.ps1 -Debug
-# Or force rebuild
-./start.ps1 -Debug -Rebuild
-```
+### Devcontainer Python debugging
 
-**Other options:**
+1. Start stack: `./infra/scripts/wr.ps1 debug up --build`
+2. Launch `Debug (Devcontainer): Python Services`
+3. Set breakpoints in `apps/backend/`, `apps/langchain/`, or `apps/fastmcp/`
 
-- `-Attach` — keep logs attached in current terminal
-- `-Services backend,langchain` — start only these services
-- `-InfraOnly` — start only Ollama and Playwright
-- `-Help` — show usage
+### Host attach debugging
 
-## Attaching Debuggers
+1. Start stack: `./infra/scripts/wr.ps1 debug up --build`
+2. Launch `Debug (Host): Python Services`
+3. Set breakpoints from host VS Code session
 
-Create VS Code launch configurations in `.vscode/launch.json` like:
-Start a specific subset (e.g., only backend and langchain):
+### Frontend debug
 
-```json
-./start.ps1 -Services backend,langchain
-  "version": "0.2.0",
-Start infra only (Ollama + Playwright, used by app stack):
-    {
-./start.ps1 -InfraOnly
-      "type": "python",
-Start in attached mode (logs stay in the terminal):
-      "connect": { "host": "localhost", "port": 5671 },
-./start.ps1 -Attach
-    },
-Stop everything (app + infra):
-      "name": "Attach LangChain (debugpy)",
-./stop.ps1
-      "request": "attach",
-Stop only selected app services:
-      "justMyCode": true
-./stop.ps1 -Services backend,langchain
-```
+1. Start debug stack: `./infra/scripts/wr.ps1 debug up --build`
+2. Launch `Debug Frontend (Node Inspect)`
 
-Prune after stopping:
-{
-"name": "Attach FastMCP (debugpy)",
-"type": "python",
-"request": "attach",
-"connect": { "host": "localhost", "port": 5673 },
-"justMyCode": true
-}
-]
-}
+## Health Checks
 
-````
-
-(Frontend Node inspect is commented out; to enable, uncomment the `frontend` section in the generated debug override file and add a Node attach config.)
-
-Node attach example:
-
-```json
-{
-  "name": "Attach Frontend (Node Inspect)",
-  "type": "node",
-  "request": "attach",
-  "port": 9229,
-  "restart": true
-}
-````
-
-## Breakpoints & Flow
-
-1. Start with `./start.ps1 -Debug`.
-
-- Note: without pwsh installed, run `docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --build`
-
-2. Attach to `backend` port 5671 — breakpoints in `backend/server.py` will halt HTTP or WebSocket request handling.
-3. Attach to `langchain` port 5672 — set breakpoints in agent logic (`langchain/src/agent.py`, callbacks) to inspect thought/action cycles.
-4. Attach to `fastmcp` port 5673 — breakpoints in `fastmcp/src/tools.py` for navigation, screenshot, or content extraction tools.
-
-## Common Debug Scenarios
-
-### Investigate Browser Tool Failures
-
-- Attach FastMCP (5673)
-- Trigger a task from frontend
-- Verify domain filtering, rate limiting, and error object structure.
-
-### Agent Decision Loop Analysis
-
-- Attach LangChain (5672)
-- Set breakpoints in `execute_research_task`
-- Observe sequence of tool calls and memory usage.
-
-### API/WebSocket Issues
-
-- Attach Backend (5671)
-- Inspect task creation, event streaming, and screenshot endpoints.
-
-## FastMCP Local vs Docker Hybrid
-
-If you prefer to run FastMCP locally:
-
-1. Stop only fastmcp service:
-   ```powershell
-   ./stop.ps1 -Services fastmcp
-   ```
-2. Set `FASTMCP_HOST=host.docker.internal` in `.env` (on Linux you may need an extra host mapping in compose).
-3. From `fastmcp/` run (use uv for local development):
-      ```powershell
-      # Install dependencies with uv
-      cd fastmcp
-      uv sync --group dev
-
-      # Start FastMCP under debugpy
-      python -m debugpy --listen 0.0.0.0:5673 --wait-for-client server.py
-      ```
-4. Attach VS Code to port 5673.
-
-## Stopping Services
-
-```powershell
-./stop.ps1 -All
-```
-
-Selective stop:
-
-```powershell
-./stop.ps1 -Services backend,langchain
-```
-
-Prune unused resources:
-
-```powershell
-./stop.ps1 -Prune
-```
-
-Help:
-
-```powershell
-./stop.ps1 -Help
-```
+- FastMCP: `curl http://localhost:3101/health`
+- LangChain: `curl http://localhost:8001/health`
+- Backend: `curl http://localhost:8000/health`
 
 ## Troubleshooting
 
-| Issue                         | Cause                                    | Fix                                                    |
-| ----------------------------- | ---------------------------------------- | ------------------------------------------------------ |
-| Debugger won't attach         | Port not exposed                         | Ensure `-Debug` was passed, regenerate override        |
-| Breakpoints never hit         | Service not restarted with debug command | Run `./stop.ps1 -All` then `./start.ps1 -Debug`        |
-| Frontend cannot reach backend | Env mismatch                             | Check `.env` values and container logs                 |
-| FastMCP tool errors           | Playwright not healthy                   | Verify `container/docker-compose.yml` infra is running |
-
-## Best Practices
-
-- Keep debug sessions short to avoid holding locks.
-- Use selective service start (`-Services`) when focusing on one component.
-- Prefer Docker debug over local to match production-like environment.
-- Capture logs in `logs/` for post-mortem analysis.
-
-## Next Steps
-
-- Add dedicated VS Code tasks for starting/stopping in debug.
-- Integrate live reload (watch + debug) for Python services via `watchfiles`.
-- Add structured tracing (OpenTelemetry) across service boundaries.
-
----
-
-_Version: 1.0 — Updated: 2025-11-07_
+- If attach fails, verify service is running: `./infra/scripts/wr.ps1 logs <service>`
+- If ports conflict, run `./infra/scripts/wr.ps1 down` then restart.
+- If backend starts before dependency readiness in debug mode, wait for health to report `healthy` before submitting tasks.

@@ -1,3 +1,5 @@
+# DEPRECATED: Use infra/compose/compose.yaml (+ compose.dev.yaml or compose.prod.yaml) via infra/scripts/wr.ps1.
+# This legacy file is retained temporarily for compatibility only.
 # Web Reader Application Services
 # This compose file defines all application-level services.
 # External services (Playwright, Ollama) are in container/docker-compose.yml

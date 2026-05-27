@@ -1,0 +1,15 @@
+[project]
+name = "web-reader-workspace"
+version = "0.1.0"
+description = "Root uv workspace metadata for Web Reader monorepo"
+requires-python = ">=3.13"
+
+[tool.uv.workspace]
+members = [
+  "apps/backend",
+  "apps/langchain",
+  "apps/fastmcp",
+]
+
+[tool.uv]
+managed = false

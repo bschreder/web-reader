@@ -1,10 +1,11 @@
---- 
-applyTo: ./backend/**/*.py
+---
+applyTo: ./apps/backend/**/*.py
 description: This file describes the post-change validation steps for Backend Python files.
 ---
+
 # Backend - Post-Change Validation Instructions
 
-**Scope**: This applies to all Python files in `./backend/**/*.py`
+**Scope**: This applies to all Python files in `./apps/backend/**/*.py`
 
 After making any changes or additions to Python files in the backend directory, you **MUST** run the following validation steps in order:
 
@@ -13,16 +14,20 @@ After making any changes or additions to Python files in the backend directory, 
 **Before validating Backend changes**, check if any changes were made to dependent projects:
 
 ### If LangChain was modified:
+
 Backend depends on LangChain (calls LangChain orchestrator via HTTP). If LangChain files were changed, you **MUST** first execute all steps in `.github/instructions/langchain.instructions.md` to ensure LangChain is working correctly before proceeding with Backend validation.
 
 ### If FastMCP was modified:
+
 Backend indirectly depends on FastMCP (through LangChain). If FastMCP files were changed, you **MUST** first execute:
+
 1. All steps in `.github/instructions/fastmcp.instructions.md`
 2. Then all steps in `.github/instructions/langchain.instructions.md`
 
 Then proceed with Backend validation.
 
 ### Dependency Chain:
+
 ```
 FastMCP (MCP tools) → LangChain (orchestration) → Backend (API) → Frontend
 ```
@@ -34,7 +39,7 @@ Always validate dependencies from left to right before validating the current pr
 ## 1. Navigate to Backend Directory
 
 ```bash
-cd ./backend
+cd ./apps/backend
 ```
 
 ## 2. Run Ruff Linter
@@ -111,6 +116,7 @@ cd ..
 ```
 
 This will:
+
 - Rebuild only the backend Docker image
 - Start backend service in debug mode with debugpy port 5671 exposed
 - Validate that the backend service starts correctly and integrates with other services
@@ -137,7 +143,7 @@ For rapid validation during development:
 
 ```bash
 # Full validation in one go (from backend directory)
-cd ./backend && \
+cd ./apps/backend && \
   uv run ruff check --fix . && \
   uv run ruff format . && \
   uv run pytest -v && \
@@ -158,11 +164,13 @@ cd ./backend && \
 ## Common Issues and Solutions
 
 ### Ruff Errors
+
 - Import order issues: Let ruff auto-fix with `--fix`
 - Line length: Consider refactoring long lines for readability
 - Unused imports: Remove them or use `# noqa: F401` if intentional
 
 ### Test Failures
+
 - LangChain connection: Ensure LangChain service is running and accessible at port 8001
 - WebSocket issues: Check connection handling and message serialization
 - Task management: Verify task creation, storage, and retrieval logic
@@ -171,6 +179,7 @@ cd ./backend && \
 - Async issues: Verify all async functions are properly awaited
 
 ### Docker Build Failures
+
 - Dependency conflicts: Check pyproject.toml for version constraints
 - Port conflicts: Ensure ports 8000, 5671 are available
 - Network issues: Verify external-services-network exists
@@ -187,6 +196,7 @@ Backend depends on and is depended upon by:
 - **Artifacts directory**: Stores task results, screenshots, and metadata
 
 ### Critical Integration Flow:
+
 1. **Frontend** submits task via HTTP POST → **Backend** `/tasks/` endpoint
 2. **Backend** streams progress via WebSocket to Frontend
 3. **Backend** calls **LangChain** HTTP endpoint to execute task
@@ -198,36 +208,42 @@ Always test the complete integration flow, not just isolated components.
 ## Backend-Specific Validation
 
 ### FastAPI Endpoints
+
 - Test all REST endpoints (POST /tasks, GET /tasks, GET /tasks/{id})
 - Verify request validation with Pydantic models
 - Check response status codes and error handling
 - Test CORS headers for allowed origins
 
 ### WebSocket Communication
+
 - Verify WebSocket connection establishment
 - Test streaming events (thinking, tool_call, tool_result, screenshot, complete, error)
 - Check connection cleanup on task completion or error
 - Validate message serialization/deserialization
 
 ### Task Management
+
 - Test task creation with unique IDs
 - Verify task storage and retrieval
 - Check task status transitions (pending → running → complete/error)
 - Validate task history and metadata storage
 
 ### Artifact Handling
+
 - Test screenshot saving and retrieval
 - Verify artifact directory structure
 - Check file permissions and access
 - Validate artifact metadata in task results
 
 ### Property Mapping (Pydantic Validation)
+
 - Test TaskRequest validation against Pydantic models
 - Verify TaskResponse property mapping
 - Check error handling for invalid requests
 - Validate request/response model consistency
 
 ### Error Handling
+
 - Test structured error responses
 - Verify error logging without sensitive data
 - Check recoverable vs non-recoverable error handling

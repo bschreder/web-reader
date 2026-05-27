@@ -1,0 +1,68 @@
+services:
+  frontend:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+      NODE_OPTIONS: --inspect=0.0.0.0:9229
+    ports:
+      - "9229:9229"
+    volumes:
+      - ../../apps/frontend/src:/app/src:rw
+      - ../../apps/frontend/tests:/app/tests:rw
+      - ../../apps/frontend/vite.config.ts:/app/vite.config.ts:rw
+      - ../../apps/frontend/vitest.config.ts:/app/vitest.config.ts:rw
+      - ../../apps/frontend/tsconfig.json:/app/tsconfig.json:rw
+      - ../../apps/frontend/eslint.config.js:/app/eslint.config.js:rw
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+  backend:
+    build:
+      target: dev
+    environment:
+      LOG_LEVEL: debug
+      DEBUGPY_PORT: 5671
+    ports:
+      - "5671:5671"
+    volumes:
+      - ../../apps/backend/src:/app/src:rw
+      - ../../apps/backend/tests:/app/tests:rw
+      - ../../apps/backend/server.py:/app/server.py:rw
+      - ../../apps/backend/pytest.ini:/app/pytest.ini:rw
+    command: >-
+      sh -c "python -m debugpy --listen 0.0.0.0:${DEBUGPY_PORT:-5671} -m uvicorn server:app --host 0.0.0.0 --port 8000 --reload"
+
+  langchain:
+    build:
+      target: dev
+    environment:
+      LOG_LEVEL: debug
+      DEBUGPY_PORT: 5672
+    ports:
+      - "5672:5672"
+    volumes:
+      - ../../apps/langchain/src:/app/src:rw
+      - ../../apps/langchain/tests:/app/tests:rw
+      - ../../apps/langchain/server.py:/app/server.py:rw
+      - ../../apps/langchain/pytest.ini:/app/pytest.ini:rw
+    command: >-
+      sh -c "python -m debugpy --listen 0.0.0.0:${DEBUGPY_PORT:-5672} server.py"
+
+  fastmcp:
+    build:
+      target: dev
+    environment:
+      LOG_LEVEL: debug
+      DEBUGPY_PORT: 5673
+    ports:
+      - "3100:3100"
+      - "3101:3101"
+      - "5673:5673"
+    volumes:
+      - ../../apps/fastmcp/src:/app/src:rw
+      - ../../apps/fastmcp/tests:/app/tests:rw
+      - ../../apps/fastmcp/server.py:/app/server.py:rw
+      - ../../apps/fastmcp/pytest.ini:/app/pytest.ini:rw
+    command: >-
+      sh -c "python -m debugpy --listen 0.0.0.0:${DEBUGPY_PORT:-5673} server.py"

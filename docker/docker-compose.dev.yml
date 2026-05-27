@@ -1,3 +1,4 @@
+# DEPRECATED: Use infra/compose/compose.dev.yaml with infra/scripts/wr.ps1 debug up.
 # Development overlay for docker-compose.yml
 # This file adds hot reload, source mounts, debug ports, and test directories
 # Usage: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d

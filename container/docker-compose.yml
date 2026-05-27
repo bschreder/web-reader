@@ -1,3 +1,4 @@
+# DEPRECATED: Use infra/compose/compose.yaml with --profile infra via infra/scripts/wr.ps1.
 name: web-reader
 
 services:

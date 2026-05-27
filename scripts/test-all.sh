@@ -82,7 +82,7 @@ run_python_tests() {
 run_frontend_tests() {
     echo ""
     echo ">>> Running frontend tests"
-    cd "$PROJECT_ROOT/frontend"
+    cd "$PROJECT_ROOT/apps/frontend"
     
     if [ "$TEST_TYPE" = "unit" ] || [ "$TEST_TYPE" = "all" ]; then
         echo "  → Unit tests"
@@ -113,9 +113,9 @@ run_frontend_tests() {
 }
 
 # Run tests for each service
-run_python_tests "fastmcp" "$TEST_TYPE"
-run_python_tests "backend" "$TEST_TYPE"
-run_python_tests "langchain" "$TEST_TYPE"
+run_python_tests "apps/fastmcp" "$TEST_TYPE"
+run_python_tests "apps/backend" "$TEST_TYPE"
+run_python_tests "apps/langchain" "$TEST_TYPE"
 run_frontend_tests
 
 echo ""

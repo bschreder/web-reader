@@ -62,10 +62,10 @@ Use `.env.example` as the source of truth. Common keys:
 - Project plan: `.github/project-plan.md`
 - Testing commands and patterns: `README.TEST.md`
 - Dev vs prod and local debugging: `README.DEBUG.md`, `README.VSCODE-TESTING.md`
-- FastMCP tool design, rate limiting, domain filtering: `fastmcp/README.md`
-- LangChain agent patterns and streaming callbacks: `langchain/README.md`
-- Backend API and WebSocket events: `backend/README.md`
-- Frontend HMR and structure: `frontend/README.md`
+- FastMCP tool design, rate limiting, domain filtering: `apps/fastmcp/README.md`
+- LangChain agent patterns and streaming callbacks: `apps/langchain/README.md`
+- Backend API and WebSocket events: `apps/backend/README.md`
+- Frontend HMR and structure: `apps/frontend/README.md`
 
 ## Technology Links
 

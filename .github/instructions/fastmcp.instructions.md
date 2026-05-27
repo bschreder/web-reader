@@ -1,17 +1,18 @@
---- 
-applyTo: ./fastmcp/**/*.py
+---
+applyTo: ./apps/fastmcp/**/*.py
 description: This file describes the post-change validation steps for FastMCP Python files.
 ---
+
 # FastMCP - Post-Change Validation Instructions
 
-**Scope**: This applies to all Python files in `./fastmcp/**/*.py`
+**Scope**: This applies to all Python files in `./apps/fastmcp/**/*.py`
 
 After making any changes or additions to Python files in the fastmcp directory, you **MUST** run the following validation steps in order:
 
 ## 1. Navigate to FastMCP Directory
 
 ```bash
-cd ./fastmcp
+cd ./apps/fastmcp
 ```
 
 ## 2. Run Ruff Linter
@@ -88,6 +89,7 @@ cd ..
 ```
 
 This will:
+
 - Rebuild only the fastmcp Docker image
 - Start fastmcp service in debug mode with debugpy port 5673 exposed
 - Validate that the fastmcp service starts correctly and integrates with other services
@@ -108,7 +110,7 @@ For rapid validation during development:
 
 ```bash
 # Full validation in one go (from fastmcp directory)
-cd ./fastmcp && \
+cd ./apps/fastmcp && \
   uv run ruff check --fix . && \
   uv run ruff format . && \
   uv run pytest -v && \
@@ -127,16 +129,19 @@ cd ./fastmcp && \
 ## Common Issues and Solutions
 
 ### Ruff Errors
+
 - Import order issues: Let ruff auto-fix with `--fix`
 - Line length: Consider refactoring long lines for readability
 - Unused imports: Remove them or use `# noqa: F401` if intentional
 
 ### Test Failures
+
 - Browser timeout: Check rate limiting and delays in config
 - MCP connection: Ensure fastmcp server starts before tests run
 - Async issues: Verify all async functions are properly awaited
 
 ### Docker Build Failures
+
 - Dependency conflicts: Check pyproject.toml for version constraints
 - Port conflicts: Ensure ports 3000, 5673 are available
 - Network issues: Verify external-services-network exists
