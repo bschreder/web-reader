@@ -104,13 +104,13 @@ HEALTHCHECK CMD wget -q -O /dev/null http://localhost || exit 1
 
 Two compose files layer configurations:
 
-1. `docker/docker-compose.yml` (production baseline) – uses `prod` image target, minimal environment, persistent data volumes only.
-2. `docker/docker-compose.dev.yml` (development overlay) – selects `dev` build target, mounts source + test directories, exposes debug ports, overrides CMD with watcher/HMR.
+1. `infra/compose/compose.yaml` (production baseline) – uses `prod` image target, minimal environment, persistent data volumes only.
+2. `infra/compose/compose.dev.yaml` (development overlay) – selects `dev` build target, mounts source + test directories, exposes debug ports, overrides CMD with watcher/HMR.
 
 Launch (dev):
 
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d --build
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml up -d --build
 ```
 
 Example dev overrides snippet:
@@ -186,9 +186,9 @@ cd langchain && uv sync --all-groups && uv run pytest tests/e2e -v
 Optional container exec:
 
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp uv run pytest tests/unit --cov=src --cov-branch
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend uv run pytest tests/integration -v
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain uv run pytest tests/e2e -v
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml exec fastmcp uv run pytest tests/unit --cov=src --cov-branch
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml exec backend uv run pytest tests/integration -v
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml exec langchain uv run pytest tests/e2e -v
 ```
 
 Frontend execution (devcontainer):
@@ -202,12 +202,12 @@ npx playwright test tests/e2e
 Optional container exec:
 
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:unit
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml exec frontend npm run test:unit
 ```
 
 ## Cross-Service End-to-End Tests
 
-Optional root-level `tests/e2e` can coordinate multi-service flows (e.g., submit task, observe streaming, verify citations). Use a dedicated ephemeral service in `docker-compose.dev.yml`:
+Optional root-level `tests/e2e` can coordinate multi-service flows (e.g., submit task, observe streaming, verify citations). Use a dedicated ephemeral service in `infra/compose/compose.dev.yaml`:
 
 ```yaml
 e2e-tests:
@@ -224,12 +224,12 @@ e2e-tests:
     ["bash", "-c", "pip install pytest pytest-asyncio && pytest tests/e2e -v"]
 ```
 
-## Start Script Integration (`start.ps1`)
+## Entrypoint Integration (`infra/scripts/wr.ps1`)
 
-The PowerShell script should optionally layer development compose file:
+The command wrapper should optionally layer development compose file:
 
 - Default (docker mode): production-only compose
-- With dev flag (future enhancement) or internal logic: `docker/docker-compose.yml` + `docker/docker-compose.dev.yml`
+- With debug/dev flag (future enhancement) or internal logic: `infra/compose/compose.yaml` + `infra/compose/compose.dev.yaml`
   Ensure help text documents how dev overlay is applied for hot reload.
 
 ## Async & Streaming Conventions
@@ -253,7 +253,7 @@ When introducing another service:
 2. Add service section to both compose files (prod target / dev target overrides).
 3. Implement test scaffolding & coverage.
 4. Update `project-plan.md` phase tasks if it changes timeline.
-5. Extend `start.ps1` only if orchestration semantics differ.
+5. Extend `infra/scripts/wr.ps1` only if orchestration semantics differ.
 
 ## Summary
 
@@ -1656,7 +1656,7 @@ services:
     depends_on:
       - backend
     networks:
-      - web-reader-net
+      - default
 
   backend:
     build:
@@ -1677,7 +1677,7 @@ services:
       - ollama
       - fastmcp
     networks:
-      - web-reader-net
+      - default
     volumes:
       - ./config:/app/config:ro
 
@@ -1691,7 +1691,7 @@ services:
       - FASTMCP_HOST=fastmcp
       - FASTMCP_PORT=3000
     networks:
-      - web-reader-net
+      - default
 
   fastmcp:
     build:
@@ -1704,7 +1704,7 @@ services:
     depends_on:
       - playwright
     networks:
-      - web-reader-net
+      - default
     volumes:
       - ./config:/app/config:rw
 
@@ -1712,7 +1712,7 @@ services:
     image: mcr.microsoft.com/playwright:v1.56.0-noble
     command: ["sleep", "infinity"]
     networks:
-      - web-reader-net
+      - default
     shm_size: 2gb
 
   ollama:
@@ -1722,12 +1722,12 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     networks:
-      - web-reader-net
+      - default
     environment:
       - OLLAMA_HOST=0.0.0.0
 
 networks:
-  web-reader-net:
+  default:
     driver: bridge
 
 volumes:

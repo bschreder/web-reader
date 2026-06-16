@@ -8,7 +8,7 @@ from typing import Any, Optional, Callable
 import httpx
 from loguru import logger
 
-from .config import LANGCHAIN_URL
+from .config import LANGCHAIN_REQUEST_TIMEOUT_BUFFER, LANGCHAIN_URL
 from .tasks import Task
 
 # ============================================================================
@@ -104,7 +104,7 @@ class LangChainClient:
             response = await self._client.post(
                 "/execute",
                 json=payload,
-                timeout=task.time_budget + 30.0,  # Add buffer
+                timeout=task.time_budget + LANGCHAIN_REQUEST_TIMEOUT_BUFFER,
             )
 
             response.raise_for_status()

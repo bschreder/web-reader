@@ -145,6 +145,7 @@ services:
   ollama:
     profiles: ["infra"]
     image: ollama/ollama:latest
+    pull_policy: always
     restart: unless-stopped
     environment:
       OLLAMA_HOST: 0.0.0.0

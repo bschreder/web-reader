@@ -24,10 +24,10 @@ export const Route = createFileRoute('/history')({
   // Enable SSR - render on server and send HTML to client
   loader: async (): Promise<TaskSummary[]> => {
     try {
-      logger.debug('Loading task history');
+      logger?.debug?.('Loading task history');
       return await listTasks();
     } catch (error) {
-      logger.error({ error }, 'Failed to load task history');
+      logger?.error?.({ error }, 'Failed to load task history');
       return [];
     }
   },

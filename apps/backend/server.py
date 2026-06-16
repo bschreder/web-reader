@@ -5,9 +5,7 @@ FastAPI application providing REST and WebSocket endpoints for research tasks.
 """
 
 import asyncio
-import json
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import (
@@ -18,6 +16,7 @@ from fastapi import (
     Query,
     Request,
 )
+from starlette.websockets import WebSocketState
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,8 +37,6 @@ from src.config import (
     API_PORT,
     ARTIFACT_DIR,
     CORS_ORIGINS,
-    LANGCHAIN_HOST,
-    LANGCHAIN_PORT,
     configure_logging,
 )
 from src.langchain import close_langchain_client, get_langchain_client
@@ -53,7 +50,6 @@ from src.models import (
     TaskCreate,
     TaskListResponse,
     TaskResponse,
-    TaskStatus,
     ThinkingEvent,
 )
 from src.tasks import (
@@ -230,11 +226,21 @@ async def create_new_task(task_data: TaskCreate):
             langchain_client = await get_langchain_client()
             result = await langchain_client.execute_task(t)
 
+            if result.get("status") == "error":
+                raise RuntimeError(result.get("error", "LangChain returned error status"))
+
+            answer = result.get("answer")
+            citations = result.get("citations", [])
+            if not answer and not citations:
+                raise RuntimeError(
+                    "LangChain returned empty result (no answer and no citations)"
+                )
+
             # Update task with results
-            t.answer = result.get("answer")
+            t.answer = answer
             t.citations = [
                 Citation.from_dict(c) if isinstance(c, dict) else c
-                for c in result.get("citations", [])
+                for c in citations
             ]
             t.screenshots = result.get("screenshots", [])
             t.metadata = result.get("metadata", {})
@@ -348,6 +354,33 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
     """
     await websocket.accept()
 
+    def is_ws_connected() -> bool:
+        return (
+            websocket.client_state == WebSocketState.CONNECTED
+            and websocket.application_state == WebSocketState.CONNECTED
+        )
+
+    async def safe_send_json(payload: dict) -> bool:
+        """Send payload if socket is open; return False when disconnected."""
+        if not is_ws_connected():
+            return False
+        try:
+            await websocket.send_json(payload)
+            return True
+        except WebSocketDisconnect:
+            return False
+        except RuntimeError as send_error:
+            # Starlette raises RuntimeError when sending after close frame.
+            logger.info(f"WebSocket send skipped for task {task_id}: {send_error}")
+            return False
+
+    async def safe_close(code: int = 1000) -> None:
+        if websocket.application_state != WebSocketState.DISCONNECTED:
+            try:
+                await websocket.close(code=code)
+            except Exception:
+                pass
+
     try:
         # Verify task exists
         task = await get_task(task_id)
@@ -357,8 +390,8 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
                 error=f"Task {task_id} not found",
                 recoverable=False,
             )
-            await websocket.send_json(custom_json_encoder(error_event))
-            await websocket.close(code=1008)
+            await safe_send_json(custom_json_encoder(error_event))
+            await safe_close(code=1008)
             return
 
         logger.info(f"WebSocket connected for task {task_id}")
@@ -368,7 +401,8 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
             task_id=task_id,
             content=f"Task {task.status.value}",
         )
-        await websocket.send_json(custom_json_encoder(thinking_event))
+        if not await safe_send_json(custom_json_encoder(thinking_event)):
+            return
 
         # If task is already complete, send result and close
         if task.status.value in ("completed", "failed", "cancelled"):
@@ -378,7 +412,7 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
                     error=task.error or "Task failed",
                     recoverable=False,
                 )
-                await websocket.send_json(custom_json_encoder(error_event))
+                await safe_send_json(custom_json_encoder(error_event))
             else:
                 complete_event = CompleteEvent(
                     task_id=task_id,
@@ -386,97 +420,47 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
                     citations=task.citations or [],
                     duration=task.duration or 0.0,
                 )
-                await websocket.send_json(custom_json_encoder(complete_event))
-            await websocket.close()
+                await safe_send_json(custom_json_encoder(complete_event))
+            await safe_close()
             return
 
-        # Connect to orchestrator WebSocket and relay events
-        import websockets
+        # Stream is read-only from backend task state.
+        # Do not invoke LangChain /stream here; task execution already runs via
+        # the background /execute call started at task creation time.
+        last_status: str | None = None
+        while True:
+            task = await get_task(task_id)
+            if not task:
+                break
 
-        orchestrator_ws_url = f"ws://{LANGCHAIN_HOST}:{LANGCHAIN_PORT}/stream/{task_id}"
-
-        try:
-            async with websockets.connect(orchestrator_ws_url) as orchestrator_ws:
-                logger.info(f"Connected to orchestrator for task {task_id}")
-
-                # Send task details to orchestrator
-                await orchestrator_ws.send(
-                    json.dumps(
-                        {
-                            "question": task.question,
-                            "seed_url": task.seed_url,
-                            "max_pages": task.max_pages,
-                            "time_budget": task.time_budget,
-                        }
-                    )
-                )
-
-                # Relay events from orchestrator to frontend
-                async for message in orchestrator_ws:
-                    event = json.loads(message)
-                    event_type = event.get("type", "")
-
-                    # Forward all events to frontend (already in correct format from orchestrator)
-                    await websocket.send_json(event)
-
-                    # Update task status based on events
-                    if event_type == "agent:complete":
-                        task.status = TaskStatus.COMPLETED
-                        task.answer = event.get("answer")
-                        task.citations = event.get("citations", [])
-                        task.screenshots = event.get("screenshots", [])
-                        task.metadata = event.get("metadata", {})
-                        task.completed_at = datetime.now(timezone.utc)
-                        logger.info(f"Task {task_id} completed via WebSocket stream")
-
-                    elif event_type == "agent:error":
-                        task.status = TaskStatus.FAILED
-                        task.error = event.get("error")
-                        task.completed_at = datetime.now(timezone.utc)
-                        logger.error(f"Task {task_id} failed: {task.error}")
-
-        except Exception as orchestrator_error:
-            logger.error(
-                f"Orchestrator connection error for task {task_id}: {orchestrator_error}"
-            )
-            # Fall back to polling if orchestrator WebSocket fails
-            warning_event = ThinkingEvent(
-                task_id=task_id,
-                content="Streaming unavailable, polling for updates",
-            )
-            await websocket.send_json(custom_json_encoder(warning_event))
-
-            while True:
-                task = await get_task(task_id)
-                if not task:
-                    break
-
-                # Send status update
+            if task.status.value != last_status:
                 status_event = ThinkingEvent(
                     task_id=task_id,
                     content=f"Status: {task.status.value}",
                 )
-                await websocket.send_json(custom_json_encoder(status_event))
+                if not await safe_send_json(custom_json_encoder(status_event)):
+                    return
+                last_status = task.status.value
 
-                if task.status.value in ("completed", "failed", "cancelled"):
-                    if task.status.value == "failed":
-                        error_event = ErrorEvent(
-                            task_id=task_id,
-                            error=task.error or "Task failed",
-                            recoverable=False,
-                        )
-                        await websocket.send_json(custom_json_encoder(error_event))
-                    else:
-                        complete_event = CompleteEvent(
-                            task_id=task_id,
-                            answer=task.answer or "",
-                            citations=task.citations or [],
-                            duration=task.duration or 0.0,
-                        )
-                        await websocket.send_json(custom_json_encoder(complete_event))
-                    break
+            if task.status.value in ("completed", "failed", "cancelled"):
+                if task.status.value == "failed":
+                    error_event = ErrorEvent(
+                        task_id=task_id,
+                        error=task.error or "Task failed",
+                        recoverable=False,
+                    )
+                    await safe_send_json(custom_json_encoder(error_event))
+                else:
+                    complete_event = CompleteEvent(
+                        task_id=task_id,
+                        answer=task.answer or "",
+                        citations=task.citations or [],
+                        duration=task.duration or 0.0,
+                    )
+                    await safe_send_json(custom_json_encoder(complete_event))
+                break
 
-                await asyncio.sleep(1)
+            await asyncio.sleep(1)
 
     except WebSocketDisconnect as e:
         logger.info(f"WebSocket disconnected for task {task_id}")
@@ -492,7 +476,7 @@ async def stream_task_events(websocket: WebSocket, task_id: str):
                 error=str(e),
                 recoverable=False,
             )
-            await websocket.send_json(custom_json_encoder(error_event))
+            await safe_send_json(custom_json_encoder(error_event))
         except Exception:
             pass
 

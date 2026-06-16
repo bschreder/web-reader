@@ -1,7 +1,5 @@
 """Unit tests for link extraction module."""
 
-import pytest
-
 from src.link_extractor import (
     Link,
     LinkTracker,
@@ -187,7 +185,6 @@ class TestFilterLinks:
         filtered = filter_links(links, seed_url="https://example.com")
 
         # Should filter auth-related pages
-        urls = [link.url for link in filtered]
         # Check that some links were filtered
         assert len(filtered) <= len(links)
 

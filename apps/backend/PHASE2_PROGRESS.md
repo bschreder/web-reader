@@ -132,7 +132,7 @@
 
 ### 3. Docker Integration
 
-**Location**: `container/docker-compose.yml`
+**Location**: `infra/compose/compose.yaml`
 
 **Needs**:
 

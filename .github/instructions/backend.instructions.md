@@ -112,7 +112,7 @@ Return to the project root and rebuild only the backend service in debug mode:
 
 ```bash
 cd ..
-./start.ps1 -Rebuild -Debug -Services backend
+pwsh -File ./infra/scripts/wr.ps1 debug up --build
 ```
 
 This will:
@@ -148,7 +148,7 @@ cd ./apps/backend && \
   uv run ruff format . && \
   uv run pytest -v && \
   cd .. && \
-  ./start.ps1 -Rebuild -Debug -Services backend
+  pwsh -File ./infra/scripts/wr.ps1 debug up --build
 ```
 
 ## Critical Reminders
@@ -182,7 +182,7 @@ cd ./apps/backend && \
 
 - Dependency conflicts: Check pyproject.toml for version constraints
 - Port conflicts: Ensure ports 8000, 5671 are available
-- Network issues: Verify external-services-network exists
+- Network issues: Verify required services are running with `./infra/scripts/wr.ps1 up` or `./infra/scripts/wr.ps1 debug up`
 - Volume mounts: Ensure artifacts directory is properly mounted
 - LangChain connection: Ensure LangChain container is running and healthy
 

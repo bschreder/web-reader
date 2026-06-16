@@ -1,9 +1,8 @@
 """Tests for LangChain tool wrappers."""
 
 import pytest
-
+from src.collector import get_collector, reset_collector
 from src.tools import create_langchain_tools
-from src.collector import reset_collector, get_collector
 
 
 class TestToolWrappers:
@@ -130,7 +129,7 @@ class TestToolWrappers:
         """Test creation of LangChain StructuredTools."""
         tools = create_langchain_tools(mock_mcp_client)
 
-        assert len(tools) == 3
+        assert len(tools) == 4
         assert all(hasattr(tool, "name") for tool in tools)
         assert all(hasattr(tool, "description") for tool in tools)
 
@@ -143,7 +142,7 @@ class TestToolWrappers:
         """Test optional search/link tool registration."""
         tools = create_langchain_tools(mock_mcp_client, include_search_and_links=True)
 
-        assert len(tools) == 5
+        assert len(tools) == 6
         tool_names = [tool.name for tool in tools]
         assert "search_for_question" in tool_names
         assert "extract_links_from_page" in tool_names

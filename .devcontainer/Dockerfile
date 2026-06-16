@@ -13,7 +13,7 @@ ENV PATH=/home/${USERNAME}/.local/bin:${PATH}
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     curl ca-certificates gnupg lsb-release software-properties-common \
-    build-essential pkg-config git && \
+    build-essential pkg-config git ripgrep && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python 3.13 via deadsnakes
@@ -34,7 +34,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Install PowerShell (pwsh) to allow running start.ps1/stop.ps1 inside devcontainer
+# Install PowerShell (pwsh) to run repo automation scripts inside devcontainer
 USER root
 RUN wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O /tmp/packages-microsoft-prod.deb \
     && dpkg -i /tmp/packages-microsoft-prod.deb \

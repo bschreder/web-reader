@@ -23,6 +23,7 @@ def _require_env(name: str) -> str:
         raise RuntimeError(f"Missing required environment variable: {name}")
     return value.strip()
 
+
 # Playwright connection
 PLAYWRIGHT_WS_URL: Final[str] = _require_env("PLAYWRIGHT_WS_URL")
 _playwright_parsed = urlparse(PLAYWRIGHT_WS_URL)
@@ -44,6 +45,7 @@ REQUEST_DELAY_MAX: Final[int] = int(os.getenv("REQUEST_DELAY_MAX", "20"))
 # Content limits
 MAX_TEXT_CHARS: Final[int] = int(os.getenv("MAX_TEXT_CHARS", "10000"))
 MAX_LINKS: Final[int] = int(os.getenv("MAX_LINKS", "50"))
+OUTPUT_WEBPAGE: Final[bool] = os.getenv("OUTPUT_WEBPAGE", "false").lower() == "true"
 
 # Logging
 LOG_LEVEL: Final[str] = os.getenv("LOG_LEVEL", "info").upper()
@@ -100,12 +102,16 @@ def configure_logging():  # pragma: no cover
 
     # Add file handler (Json Handler)
     if LOG_TARGET in ("file", "both"):
-        logger.add(
-            LOG_FILE,
-            level=LOG_LEVEL,
-            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}",
-            rotation="100 MB",
-            retention="7 days",
-        )
+        try:
+            Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
+            logger.add(
+                LOG_FILE,
+                level=LOG_LEVEL,
+                format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}",
+                rotation="100 MB",
+                retention="7 days",
+            )
+        except OSError as exc:
+            logger.warning(f"File logging disabled: cannot write to '{LOG_FILE}' ({exc})")
 
     logger.info(f"FastMCP server configured (log level: {LOG_LEVEL}, target: {LOG_TARGET})")

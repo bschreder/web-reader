@@ -56,7 +56,8 @@ class TestFullWorkflow:
         mocker.patch("src.tools.is_domain_allowed", return_value=True)
 
         # Constants for timing assertions
-        max_navigation_time = 5.0  # Maximum expected time for first navigation
+        # First navigation includes websocket connect + browser/context cold start in e2e.
+        max_navigation_time = 10.0
         min_rate_delay = 8.0  # Minimum rate limit delay (configured 10-20s with tolerance)
 
         # Make 3 quick requests to the same domain

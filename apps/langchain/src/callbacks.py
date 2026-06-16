@@ -7,6 +7,7 @@ execution events to connected WebSocket clients in real-time.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import datetime, UTC
 from typing import Any, Dict, List
@@ -37,9 +38,13 @@ class WebSocketCallbackHandler(AsyncCallbackHandler):
         """
         self.websocket = websocket
         self.start_time = datetime.now(UTC)
+        self._closed = False
 
     async def _send_event(self, event_type: str, data: Dict[str, Any]) -> None:
         """Send an event to the WebSocket client (non-blocking)."""
+        if self._closed:
+            return
+
         event = {
             "type": event_type,
             "timestamp": datetime.now(UTC).isoformat(),
@@ -48,15 +53,18 @@ class WebSocketCallbackHandler(AsyncCallbackHandler):
         }
 
         async def _send():
+            if self._closed:
+                return
             try:
                 await self.websocket.send_json(event)
                 logger.debug(f"Sent event: {event_type}")
             except Exception as e:
-                logger.error(f"Failed to send WebSocket event: {e}")
+                self._closed = True
+                logger.debug(
+                    f"Stopping WebSocket callback stream after send failure: {e}"
+                )
 
         # Schedule send without blocking the callback, then yield to let it run
-        import asyncio
-
         asyncio.create_task(_send())
         # Give the event loop a chance to run the scheduled task
         try:

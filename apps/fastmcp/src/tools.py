@@ -7,7 +7,11 @@ provide more structured access patterns for the LangChain orchestrator.
 
 import asyncio
 import base64
+import re
 import time
+from datetime import datetime
+from html import unescape
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
@@ -21,8 +25,9 @@ from .config import (
     HTTP_STATUS_MESSAGES,
     MAX_LINKS,
     MAX_TEXT_CHARS,
-    REQUEST_DELAY_MIN,
+    OUTPUT_WEBPAGE,
     REQUEST_DELAY_MAX,
+    REQUEST_DELAY_MIN,
 )
 from .filtering import is_domain_allowed
 from .rate_limiting import enforce_rate_limit
@@ -105,6 +110,54 @@ def prompt():
     return deco
 
 
+def _html_to_markdown(html_content: str) -> str:
+    """Convert a focused HTML fragment into lightweight markdown."""
+    text = html_content
+
+    # Preserve common structural blocks before tag stripping.
+    text = re.sub(r"(?is)<h1[^>]*>(.*?)</h1>", r"\n# \1\n", text)
+    text = re.sub(r"(?is)<h2[^>]*>(.*?)</h2>", r"\n## \1\n", text)
+    text = re.sub(r"(?is)<h3[^>]*>(.*?)</h3>", r"\n### \1\n", text)
+    text = re.sub(r"(?is)<h4[^>]*>(.*?)</h4>", r"\n#### \1\n", text)
+    text = re.sub(r"(?is)<h5[^>]*>(.*?)</h5>", r"\n##### \1\n", text)
+    text = re.sub(r"(?is)<h6[^>]*>(.*?)</h6>", r"\n###### \1\n", text)
+    text = re.sub(r"(?is)<li[^>]*>(.*?)</li>", r"\n- \1", text)
+    text = re.sub(r"(?is)<blockquote[^>]*>(.*?)</blockquote>", r"\n> \1\n", text)
+    text = re.sub(r"(?is)<pre[^>]*>(.*?)</pre>", r"\n```\n\1\n```\n", text)
+    text = re.sub(r"(?is)<code[^>]*>(.*?)</code>", r"`\1`", text)
+    text = re.sub(r"(?is)<br\s*/?>", "\n", text)
+    text = re.sub(r"(?is)</p>", "\n\n", text)
+
+    # Convert links to markdown link syntax.
+    text = re.sub(
+        r'(?is)<a[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+        r"[\2](\1)",
+        text,
+    )
+
+    # Strip remaining tags and normalize whitespace.
+    text = re.sub(r"(?is)<[^>]+>", "", text)
+    text = unescape(text)
+    text = re.sub(r"\r\n?", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _output_webpage(html_content: str, text_content: str, markdown: str) -> None:
+    """Output page content artifacts for offline inspection if enabled."""
+    if not OUTPUT_WEBPAGE:
+        return
+
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    filename_base = f"webpage-{timestamp}"
+    logs_dir = Path("logs")
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    (logs_dir / f"{filename_base}.html").write_text(html_content, encoding="utf-8")
+    (logs_dir / f"{filename_base}.txt").write_text(text_content, encoding="utf-8")
+    (logs_dir / f"{filename_base}.md").write_text(markdown, encoding="utf-8")
+
+
 # ============================================================================
 # MCP Tools
 # ============================================================================
@@ -160,11 +213,6 @@ async def navigate_to(
 
             # Special handling for 429: apply backoff and retry once
             if response.status == 429:
-                try:
-                    from .rate_limiting import REQUEST_DELAY_MIN, REQUEST_DELAY_MAX
-                except Exception:
-                    REQUEST_DELAY_MIN, REQUEST_DELAY_MAX = 10, 20
-
                 # Exponential-ish backoff within configured window
                 backoff = (REQUEST_DELAY_MIN + REQUEST_DELAY_MAX) / 2
                 logger.warning(
@@ -291,10 +339,19 @@ async def get_page_content(task_id: str = "default") -> dict[str, Any]:
         """)
 
         text = content["text"]
+        html = content["html"]
+        markdown = _html_to_markdown(html)
         truncated = False
         if len(text) > MAX_TEXT_CHARS:
             text = text[:MAX_TEXT_CHARS]
             truncated = True
+
+        # DEBUG PURPOSES: keep local artifacts for raw extraction verification.
+        if OUTPUT_WEBPAGE:
+            try:
+                _output_webpage(html, text, markdown)
+            except Exception as e:
+                logger.warning(f"DEBUG dump content files failed: {e}")
 
         logger.info(f"Extracted content from {url} ({len(text)} chars, {len(links)} links)")
 
@@ -302,6 +359,8 @@ async def get_page_content(task_id: str = "default") -> dict[str, Any]:
             "title": title,
             "url": url,
             "text": text,
+            "html": html,
+            "markdown": markdown,
             "truncated": truncated,
             "links": links[:MAX_LINKS],
             "metadata": metadata,

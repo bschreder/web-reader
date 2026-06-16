@@ -34,7 +34,7 @@
     {
       "label": "Stop + Prune",
       "type": "shell",
-      "command": "pwsh -File ${workspaceFolder}/stop.ps1 -Prune",
+      "command": "pwsh -Command \"& { pwsh -File ${workspaceFolder}/infra/scripts/wr.ps1 down; docker system prune -f; docker volume prune -f }\"",
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",

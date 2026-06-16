@@ -71,14 +71,13 @@ async def get_browser() -> Browser:
     """
     Get or create shared browser instance.
 
-    For localhost: launches local browser directly
-    For remote hosts: connects to remote Playwright server (fails on connection error)
+    Connects to configured Playwright WebSocket server.
 
     Returns:
         Browser instance
 
     Raises:
-        Exception: If remote connection fails (no fallback)
+        Exception: If Playwright WebSocket connection fails
     """
     global _playwright, _browser
 
@@ -86,25 +85,10 @@ async def get_browser() -> Browser:
         logger.info("Initializing Playwright and connecting to browser")
         _playwright = await async_playwright().start()
 
-        # For localhost, use local browser directly (for tests)
-        if PLAYWRIGHT_HOST == "localhost":
-            logger.info("Using local browser launch for localhost host")
-            _browser = await _maybe_await(
-                _playwright.chromium.launch(
-                    headless=True,
-                    args=[
-                        "--disable-blink-features=AutomationControlled",
-                        "--disable-dev-shm-usage",
-                        "--no-sandbox",
-                    ],
-                )
-            )
-        else:
-            # For remote hosts, connect to Playwright server (FAIL on error, no fallback)
-            playwright_url = f"ws://{PLAYWRIGHT_HOST}:{PLAYWRIGHT_PORT}"
-            logger.info(f"Connecting to Playwright server at {playwright_url}")
-            _browser = await _maybe_await(_playwright.chromium.connect(playwright_url))
-            logger.info("Connected to Playwright server successfully")
+        playwright_url = f"ws://{PLAYWRIGHT_HOST}:{PLAYWRIGHT_PORT}"
+        logger.info(f"Connecting to Playwright server at {playwright_url}")
+        _browser = await _maybe_await(_playwright.chromium.connect(playwright_url))
+        logger.info("Connected to Playwright server successfully")
 
         logger.info("Browser initialized successfully")
 

@@ -8,15 +8,16 @@ In addition to raw tools, this layer can also call FastMCP resources and
 prompts using ``fastmcp.Client`` semantics where appropriate.
 """
 
+from typing import Any
+
 from langchain_core.tools import StructuredTool
 from loguru import logger
 from pydantic import BaseModel, Field
 
 from .collector import get_collector
-from .link_extractor import LinkTracker, extract_links, filter_links
+from .link_extractor import extract_links, filter_links
 from .mcp_client import MCPClient
 from .search import search
-
 
 # ============================================================================
 # Tool Argument Schemas
@@ -40,6 +41,26 @@ class GetPageContentArgs(BaseModel):
     mode: str | None = Field(
         default=None,
         description="Optional extraction mode hint (currently unused).",
+    )
+
+
+class GetPageContentChunkArgs(BaseModel):
+    """Arguments for get_page_content_chunk tool."""
+
+    start_char: int = Field(
+        default=0,
+        ge=0,
+        description="Zero-based starting character offset into the selected content.",
+    )
+    max_chars: int = Field(
+        default=3000,
+        ge=200,
+        le=12000,
+        description="Maximum number of characters to return in this chunk.",
+    )
+    prefer_markdown: bool = Field(
+        default=True,
+        description="When true, chunk markdown content first; otherwise use plain text first.",
     )
 
 
@@ -96,6 +117,20 @@ class ExtractLinksArgs(BaseModel):
 # Tool Wrapper Functions
 # ============================================================================
 
+CONTENT_PREVIEW_CHARS = 4000
+
+
+async def _fetch_current_page_data(mcp_client: MCPClient) -> dict[str, Any]:
+    """Fetch current page content using resource-first fallback logic."""
+    try:
+        if (
+            getattr(mcp_client, "_client", None) is not None
+        ):  # pragma: no cover - defensive
+            return await mcp_client._client.get_resource("current_page")  # type: ignore[attr-defined]
+        return await mcp_client.call_tool("get_page_content", {})
+    except Exception:
+        return await mcp_client.call_tool("get_page_content", {})
+
 
 async def navigate_to_wrapper(url: str, wait_until: str, mcp_client: MCPClient) -> str:
     """
@@ -138,24 +173,13 @@ async def get_page_content_wrapper(mcp_client: MCPClient) -> str:
     Returns:
         Human-readable content summary
     """
-    # Prefer the richer FastMCP resource view when available, but fall back
-    # to the raw tool for compatibility with older servers.
-    try:
-        # ``current_page`` is the resource URI we register in fastmcp/server.py.
-        # We intentionally reach into the underlying FastMCP client here to
-        # take advantage of richer resource semantics.
-        if (
-            getattr(mcp_client, "_client", None) is not None
-        ):  # pragma: no cover - defensive
-            result = await mcp_client._client.get_resource("current_page")  # type: ignore[attr-defined]
-        else:
-            result = await mcp_client.call_tool("get_page_content", {})
-    except Exception:
-        result = await mcp_client.call_tool("get_page_content", {})
+    result = await _fetch_current_page_data(mcp_client)
 
     if result.get("status") == "success":
         title = result.get("title", "Unknown")
         text = result.get("text", "")
+        markdown = result.get("markdown", "")
+        html = result.get("html", "")
         word_count = result.get("word_count", 0)
         links = result.get("links", [])
         links_count = len(links)
@@ -182,15 +206,60 @@ async def get_page_content_wrapper(mcp_client: MCPClient) -> str:
         except Exception:
             logger.debug("Failed to record content citations in collector")
 
-        # Truncate text for agent consumption
-        preview = text[:500] + "..." if len(text) > 500 else text
+        # Use richer markdown when available and provide a much larger preview
+        # so the agent can ground synthesis on substantial evidence.
+        preferred_content = markdown or text or html
+        preview = (
+            preferred_content[:CONTENT_PREVIEW_CHARS] + "..."
+            if len(preferred_content) > CONTENT_PREVIEW_CHARS
+            else preferred_content
+        )
+
+        source_label = "markdown" if markdown else ("text" if text else "html")
 
         return f"""Page: {title}
-Content ({word_count} words, {links_count} links):
+Content ({word_count} words, {links_count} links, source={source_label}):
 {preview}"""
     else:
         error = result.get("error", "Unknown error")
         return f"Content extraction failed: {error}"
+
+
+async def get_page_content_chunk_wrapper(
+    start_char: int,
+    max_chars: int,
+    prefer_markdown: bool,
+    mcp_client: MCPClient,
+) -> str:
+    """Return a deterministic chunk from page content for iterative reading."""
+    result = await _fetch_current_page_data(mcp_client)
+
+    if result.get("status") != "success":
+        error = result.get("error", "Unknown error")
+        return f"Chunk extraction failed: {error}"
+
+    markdown = result.get("markdown", "")
+    text = result.get("text", "")
+    html = result.get("html", "")
+
+    if prefer_markdown:
+        content = markdown or text or html
+        source = "markdown" if markdown else ("text" if text else "html")
+    else:
+        content = text or markdown or html
+        source = "text" if text else ("markdown" if markdown else "html")
+
+    if not content:
+        return "Chunk extraction failed: no page content available"
+
+    start = min(max(0, start_char), len(content))
+    end = min(start + max_chars, len(content))
+    chunk = content[start:end]
+
+    return (
+        f"Chunk source={source} start={start} end={end} total={len(content)}\n"
+        f"{chunk}"
+    )
 
 
 async def take_screenshot_wrapper(full_page: bool, mcp_client: MCPClient) -> str:
@@ -358,13 +427,27 @@ Returns success/failure message with page title.""",
     content_tool = StructuredTool.from_function(
         coroutine=lambda: get_page_content_wrapper(mcp_client),
         name="get_page_content",
-        description="""Extract text content and links from the current page.
+        description="""Extract substantial page content from the current page.
 Use this after navigating to a page to read its content.
-Returns page title, text content preview, word count, and number of links found.
-The full content is available but truncated in the response for readability.""",
+Prefers markdown when available, with text/html fallback.
+Returns page title, rich content preview, word count, and number of links found.""",
         args_schema=GetPageContentArgs,
     )
     tools.append(content_tool)
+
+    chunk_tool = StructuredTool.from_function(
+        coroutine=lambda start_char=0,
+        max_chars=3000,
+        prefer_markdown=True: get_page_content_chunk_wrapper(
+            start_char, max_chars, prefer_markdown, mcp_client
+        ),
+        name="get_page_content_chunk",
+        description="""Read a deterministic chunk of the current page content.
+Use this when initial page content is insufficient and you need deeper evidence.
+Supports iterative paging by increasing start_char across multiple calls.""",
+        args_schema=GetPageContentChunkArgs,
+    )
+    tools.append(chunk_tool)
 
     # Take screenshot tool
     screenshot_tool = StructuredTool.from_function(

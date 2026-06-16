@@ -2,10 +2,10 @@
 Tests for Pydantic data models.
 """
 
-import pytest
 from datetime import datetime, timezone
-from pydantic import ValidationError
 
+import pytest
+from pydantic import ValidationError
 from src.models import (
     Citation,
     CompleteEvent,
@@ -22,7 +22,6 @@ from src.models import (
     ToolResultEvent,
 )
 
-
 # ==================================================================
 # TaskCreate Tests
 # ==================================================================
@@ -35,7 +34,7 @@ def test_task_create_valid():
     assert task.seed_url is None
     assert task.max_depth == 3
     assert task.max_pages == 20
-    assert task.time_budget == 120
+    assert task.time_budget == 300
 
 
 def test_task_create_with_all_fields():

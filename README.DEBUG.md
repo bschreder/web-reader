@@ -22,8 +22,6 @@ If you want to reset it to the canonical contract, copy [.env.example](.env.exam
 
 The shared logging keys are `LOG_LEVEL` and `LOG_TARGET`; they are global and consumed by all services.
 
-Legacy entrypoints (`start.ps1`, `stop.ps1`, `container/*`, `docker/*`) are compatibility wrappers and should not be used for new workflows.
-
 ## Debug Ports
 
 - Backend debugpy: `5671`

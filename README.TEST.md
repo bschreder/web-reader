@@ -551,7 +551,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Start infrastructure
-        run: docker compose -f container/docker-compose.yml up -d
+        run: docker compose -f infra/compose/compose.yaml --env-file .env --profile infra up -d
       - name: Run integration tests
         run: |
           docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml --env-file .env --profile infra --profile app up -d
@@ -570,8 +570,8 @@ jobs:
 
 ```bash
 # Ensure Playwright container is running
-cd /workspaces/web-reader/container
-docker compose up -d playwright
+cd /workspaces/web-reader
+docker compose -f infra/compose/compose.yaml --env-file .env --profile infra up -d playwright
 
 # Verify connection
 curl -v ws://localhost:3002

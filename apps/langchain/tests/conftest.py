@@ -16,9 +16,8 @@ from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock
 
-from dotenv import load_dotenv
 import pytest
-
+from dotenv import load_dotenv
 
 # Load .env files early so modules that read env vars at import time see values.
 HERE = Path(__file__).resolve().parent
@@ -26,7 +25,7 @@ ROOT = HERE.parents[2]
 for candidate in (ROOT / ".env", ROOT / "langchain" / ".env", HERE / ".env"):
     load_dotenv(dotenv_path=str(candidate), override=False)
 
-# Provide sensible defaults for devcontainer/docker-compose test runs when a .env
+# Provide sensible defaults for devcontainer/compose test runs when a .env
 # file is not present. These will not overwrite env vars explicitly set.
 os.environ.setdefault("OLLAMA_HOST", "ws-ollama")
 os.environ.setdefault("OLLAMA_PORT", "11434")

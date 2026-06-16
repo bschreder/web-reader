@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import asyncio
 import os
+import socket
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
+from urllib.parse import urlparse
 
 import pytest
 from dotenv import load_dotenv
@@ -28,6 +30,33 @@ os.environ.setdefault("OLLAMA_PORT", "11434")
 os.environ.setdefault("FASTMCP_HOST", "fastmcp")
 os.environ.setdefault("FASTMCP_PORT", "3100")
 os.environ.setdefault("PLAYWRIGHT_WS_URL", "ws://playwright:3002")
+
+
+def _normalize_playwright_ws_for_local_tests() -> None:
+    """Use a reachable websocket host when compose DNS is unavailable locally."""
+    ws_url = os.environ.get("PLAYWRIGHT_WS_URL", "")
+    if not ws_url:
+        return
+
+    parsed = urlparse(ws_url)
+    host = parsed.hostname
+    port = parsed.port or 3002
+    if not host:
+        return
+
+    try:
+        socket.getaddrinfo(host, port)
+    except OSError:
+        for candidate in ("172.17.0.1", "host.docker.internal", "localhost"):
+            try:
+                with socket.create_connection((candidate, port), timeout=1):
+                    os.environ["PLAYWRIGHT_WS_URL"] = f"ws://{candidate}:{port}"
+                    return
+            except OSError:
+                continue
+
+
+_normalize_playwright_ws_for_local_tests()
 
 # Add parent directory to path so we can import src modules
 sys.path.insert(0, str(Path(__file__).parent.parent))

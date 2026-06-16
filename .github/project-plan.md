@@ -3,7 +3,7 @@
 This document outlines the phased implementation plan for building the Web Reader system. Each phase has clear deliverables and dependencies. This version has:
 
 - Multistage Dockerfile requirements (base/dev/prod) for all application services
-- Development vs production compose definitions (`docker/docker-compose.yml` + `docker/docker-compose.dev.yml` layering)
+- Development vs production compose definitions (`infra/compose/compose.yaml` + `infra/compose/compose.dev.yaml` layering)
 - Hot reload strategy (watchfiles for Python, Vite HMR for frontend)
 - Unified testing strategy (>80% coverage) runnable either inside service containers or directly in the devcontainer shell
 - Standardized test directory layout (`tests/unit`, `tests/integration`, `tests/e2e`)
@@ -22,8 +22,8 @@ This document outlines the phased implementation plan for building the Web Reade
 
 #### Docker & Compose Infrastructure
 
-- [x] Create production compose file: `docker/docker-compose.yml`
-- [x] Create development compose overlay: `docker/docker-compose.dev.yml`
+- [x] Create production compose file: `infra/compose/compose.yaml`
+- [x] Create development compose overlay: `infra/compose/compose.dev.yaml`
   - [x] Use `build.target: dev` for each service in dev mode
   - [x] Add source & test volume mounts (e.g. `../backend/src:/app/src:rw`)
   - [x] Add debug ports (backend 5671, langchain 5672, fastmcp 5673, frontend 9229 optional)
@@ -39,7 +39,7 @@ This document outlines the phased implementation plan for building the Web Reade
 - [x] Document dev vs prod volume strategy:
   - **Dev**: Source + tests mounted (fast iteration, hot reload)
   - **Prod**: Code copied into image (immutable, smaller surface)
-- [x] Test stack: `docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d`
+- [x] Test stack: `docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml up -d`
 
 #### Multistage Dockerfile Requirements
 
@@ -83,7 +83,7 @@ For each project (`frontend`, `backend`, `langchain`, `fastmcp`):
 - [x] Add VS Code Dev Container configuration (`.devcontainer`)
 - [x] Base image with Python 3.13 and Node.js 24 preinstalled
 - [x] Enable Docker-outside-of-Docker feature to manage external containers (Playwright, Ollama)
-- [x] Verify devcontainer can run `docker compose` against `container/docker-compose.yml`
+- [x] Verify devcontainer can run `docker compose` against `infra/compose/compose.yaml`
 
 #### Configuration & Environment Files
 
@@ -193,7 +193,7 @@ uv run pytest tests/e2e -v --maxfail=1
 Optional inside container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec fastmcp uv run pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml exec fastmcp uv run pytest tests/unit --cov=src --cov-branch --cov-report=term-missing
 ```
 
 ### Deliverables
@@ -291,7 +291,7 @@ uv run pytest tests/e2e -v
 Optional container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec backend uv run pytest tests/unit
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml exec backend uv run pytest tests/unit
 ```
 
 ### Deliverables
@@ -388,7 +388,7 @@ uv run pytest tests/e2e -v
 Optional container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec langchain uv run pytest tests/unit
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml exec langchain uv run pytest tests/unit
 ```
 
 ### Deliverables
@@ -509,7 +509,7 @@ npx playwright test tests/e2e
 Optional container:
 
 ```
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exec frontend npm run test:unit
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml exec frontend npm run test:unit
 ```
 
 #### Docker Image
@@ -542,7 +542,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml exe
 
 #### System Integration
 
-- [ ] Launch dev stack: `docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d`
+- [ ] Launch dev stack: `docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml up -d`
 - [ ] Validate health endpoints & debug ports reachable
 - [ ] Confirm hot reload triggers (edit a file in each service)
 - [ ] Environment variables configured

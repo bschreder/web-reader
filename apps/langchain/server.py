@@ -14,7 +14,14 @@ from pydantic import BaseModel, Field
 
 from src.agent import execute_research_task
 from src.callbacks import WebSocketCallbackHandler
-from src.config import LOG_FILE, LOG_LEVEL, LOG_TARGET, SERVICE_HOST, SERVICE_PORT
+from src.config import (
+    DEFAULT_TASK_TIME_BUDGET,
+    LOG_FILE,
+    LOG_LEVEL,
+    LOG_TARGET,
+    SERVICE_HOST,
+    SERVICE_PORT,
+)
 from src.mcp_client import close_mcp_client, get_mcp_client
 
 # ============================================================================
@@ -56,7 +63,10 @@ class ExecuteTaskRequest(BaseModel):
     seed_url: str | None = Field(None, description="Optional starting URL")
     max_depth: int = Field(3, description="Maximum link depth")
     max_pages: int = Field(20, description="Maximum pages to visit")
-    time_budget: int = Field(120, description="Time budget in seconds")
+    # End-to-end task timeout policy default from environment.
+    time_budget: int = Field(
+        DEFAULT_TASK_TIME_BUDGET, description="Time budget in seconds"
+    )
 
 
 class ExecuteTaskResponse(BaseModel):
@@ -228,7 +238,7 @@ async def stream_task(websocket: WebSocket, task_id: str):
         question = data.get("question", "")
         seed_url = data.get("seed_url")
         max_iterations = min(15, data.get("max_pages", 20))
-        max_execution_time = data.get("time_budget", 120)
+        max_execution_time = data.get("time_budget", DEFAULT_TASK_TIME_BUDGET)
 
         if not question:
             await websocket.send_json(

@@ -22,6 +22,7 @@ def _require_env(name: str) -> str:
         raise RuntimeError(f"Missing required environment variable: {name}")
     return value.strip()
 
+
 # Server configuration
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
@@ -40,6 +41,14 @@ LANGCHAIN_PORT = _langchain_parsed.port
 # Task management
 MAX_CONCURRENT_TASKS = int(os.getenv("MAX_CONCURRENT_TASKS", "3"))
 TASK_TIMEOUT = int(os.getenv("TASK_TIMEOUT", "300"))  # 5 minutes
+TASK_DEFAULT_TIME_BUDGET = int(
+    os.getenv("TASK_DEFAULT_TIME_BUDGET", os.getenv("TIME_BUDGET", "300"))
+)
+TASK_MIN_TIME_BUDGET = int(os.getenv("TASK_MIN_TIME_BUDGET", "30"))
+TASK_MAX_TIME_BUDGET = int(os.getenv("TASK_MAX_TIME_BUDGET", "600"))
+LANGCHAIN_REQUEST_TIMEOUT_BUFFER = float(
+    os.getenv("LANGCHAIN_REQUEST_TIMEOUT_BUFFER", "30")
+)
 ARTIFACT_DIR = Path(os.getenv("ARTIFACT_DIR", "artifacts"))
 
 # Logging

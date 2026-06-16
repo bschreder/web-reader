@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13,<4.0"
 dependencies = [
 	"fastmcp>=2.0.0,<3.0.0",
-	"playwright>=1.56.0,<2.0.0",
+	"playwright>=1.56.0,<1.57.0",
 	"pydantic>=2.10.0,<3.0.0",
 	"loguru>=0.7.2,<0.8.0",
 ]
@@ -44,6 +44,14 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "PL"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"server.py" = ["PLW0603"]
+"src/browser.py" = ["PLW0602", "PLW0603"]
+"src/filtering.py" = ["PLW0603"]
+"src/rate_limiting.py" = ["PLW0603"]
+"src/tools.py" = ["PLR0911", "PLR2004"]
+"tests/**/*.py" = ["PLC0415", "PLR2004", "F841"]
 
 [tool.mypy]
 python_version = "3.13"

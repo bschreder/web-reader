@@ -313,25 +313,28 @@ The system follows a layered architecture with clear separation of concerns:
 │                  (Agentic Workflow)                          │
 │                                                              │
 │  - Agent executor with ReAct pattern                         │
-│  - Conversation memory & history                             │
-│  - Tool selection logic                                      │
+│  - Tool selection and sequencing                             │
+│  - Seed URL and question constraints                         │
+│  - Tool output shaping for model reasoning                   │
 │  - Error recovery & retry strategies                         │
 │  - Prompt templates & few-shot examples                      │
 │  - Callback handlers for streaming                           │
 └──────┬───────────────────────────────────────┬──────────────┘
        │ MCP Protocol                          │ LLM API
-       │                                       │
+      │ (tool calls + structured results)     │ (reasoning + synthesis)
 ┌──────▼──────────────────────┐    ┌──────────▼──────────────┐
 │     FastMCP Server          │    │   Ollama Container      │
 │  (Tool Provider)            │    │   ollama/ollama         │
 │                             │    │                         │
-│  Browser Tools:             │    │  - LLM inference        │
-│  - navigate(url)            │    │  - Tool calling         │
-│  - click(selector)          │    │  - Model: qwen3:8b      │
-│  - type(selector, text)     │    │  - Structured output    │
-│  - screenshot()             │    └─────────────────────────┘
-│  - get_page_content()       │
-│  - extract_data(schema)     │
+│  Exposed tools/resources:   │    │  - LLM inference        │
+│  - navigate_to()            │    │  - Tool calling         │
+│  - get_page_content()       │    │  - Model: qwen3:8b      │
+│  - take_screenshot()        │    │  - Final answer synthesis│
+│  - current_page/{task_id}   │    │                         │
+│                             │    └─────────────────────────┘
+│  Returns structured page    │
+│  data (text, links, metadata;│
+│  html also available)       │
 └──────┬──────────────────────┘
        │ Playwright API
        │
@@ -430,13 +433,13 @@ Prod stage specifics:
 
 Two compose files layer configurations:
 
-- `docker/docker-compose.yml` (baseline prod semantics)
-- `docker/docker-compose.dev.yml` (overlay selecting `target: dev`, mounting source/tests, overriding commands, exposing debug ports)
+- `infra/compose/compose.yaml` (baseline prod semantics)
+- `infra/compose/compose.dev.yaml` (overlay selecting `target: dev`, mounting source/tests, overriding commands, exposing debug ports)
 
 Dev stack launch:
 
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d --build
+docker compose -f infra/compose/compose.yaml -f infra/compose/compose.dev.yaml up -d --build
 ```
 
 ### TR-01C: Volume Mount Strategy

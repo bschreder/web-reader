@@ -324,7 +324,7 @@ class TestNewFeature:
 **Solutions**:
 
 1. Verify Playwright server running: `docker ps | grep playwright`
-2. Check network: `docker network inspect external-net`
+2. Check networking: `docker compose ps`
 3. Test connectivity: `curl ws://playwright:3002`
 
 ### Rate Limit Issues

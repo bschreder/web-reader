@@ -87,14 +87,17 @@ class TestGetBrowser:
         mock_playwright.chromium.connect.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_uses_local_launch_for_localhost(self, mocker: MockerFixture):
-        """Test that localhost host triggers local browser launch."""
+    async def test_connects_to_localhost_playwright(self, mocker: MockerFixture):
+        """Test that localhost host still uses websocket connect mode."""
         mock_playwright = MagicMock()
-        mock_playwright.chromium.launch = AsyncMock(return_value=MagicMock())
+        mock_browser = MagicMock()
+        mock_playwright.chromium.connect = AsyncMock(return_value=mock_browser)
+        mock_playwright.chromium.launch = AsyncMock()
 
         mocker.patch("src.browser._playwright", None)
         mocker.patch("src.browser._browser", None)
         mocker.patch("src.browser.PLAYWRIGHT_HOST", "localhost")
+        mocker.patch("src.browser.PLAYWRIGHT_PORT", 3002)
         mock_ap = mocker.patch("src.browser.async_playwright")
         mock_ap_instance = MagicMock()
         mock_ap_instance.start = AsyncMock(return_value=mock_playwright)
@@ -102,9 +105,8 @@ class TestGetBrowser:
 
         _ = await get_browser()
 
-        # Should launch locally, not connect
-        mock_playwright.chromium.launch.assert_called_once()
-        assert not mock_playwright.chromium.connect.called
+        mock_playwright.chromium.connect.assert_called_once_with("ws://localhost:3002")
+        assert not mock_playwright.chromium.launch.called
 
 
 class TestCreateContext:

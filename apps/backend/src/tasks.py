@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 from loguru import logger
 
-from .config import MAX_CONCURRENT_TASKS, TASK_TIMEOUT
+from .config import MAX_CONCURRENT_TASKS, TASK_DEFAULT_TIME_BUDGET, TASK_TIMEOUT
 from .models import TaskStatus, Citation
 
 # ============================================================================
@@ -39,7 +39,7 @@ class Task:
         seed_url: Optional[str] = None,
         max_depth: int = 3,
         max_pages: int = 20,
-        time_budget: int = 120,
+        time_budget: int = TASK_DEFAULT_TIME_BUDGET,
         search_engine: str = "duckduckgo",
         max_results: int = 10,
         safe_mode: bool = True,
@@ -130,8 +130,7 @@ async def create_task(
     seed_url: Optional[str] = None,
     max_depth: int = 3,
     max_pages: int = 20,
-    # time_budget: int = 120,
-    time_budget: int = 600,
+    time_budget: int = TASK_DEFAULT_TIME_BUDGET,
     search_engine: str = "duckduckgo",
     max_results: int = 10,
     safe_mode: bool = True,

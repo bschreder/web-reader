@@ -4,7 +4,6 @@ Provides SERP parsing and search result extraction for UC-01.
 """
 
 import re
-from typing import Optional
 
 import httpx
 from loguru import logger

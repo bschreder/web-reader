@@ -4,11 +4,19 @@ Web Reader Backend - Data Models
 Pydantic models for API requests/responses and internal task management.
 """
 
+import os
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional, Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+TASK_DEFAULT_TIME_BUDGET = int(
+    os.getenv("TASK_DEFAULT_TIME_BUDGET", os.getenv("TIME_BUDGET", "300"))
+)
+TASK_MIN_TIME_BUDGET = int(os.getenv("TASK_MIN_TIME_BUDGET", "30"))
+TASK_MAX_TIME_BUDGET = int(os.getenv("TASK_MAX_TIME_BUDGET", "600"))
 
 
 # ==================================================================
@@ -67,7 +75,13 @@ class TaskCreate(BaseModel):
     ] = None
     max_depth: int = Field(3, ge=1, le=5, description="Maximum link depth to follow")
     max_pages: int = Field(20, ge=1, le=50, description="Maximum pages to visit")
-    time_budget: int = Field(120, ge=30, le=600, description="Time budget in seconds")
+    # End-to-end task timeout policy from environment.
+    time_budget: int = Field(
+        TASK_DEFAULT_TIME_BUDGET,
+        ge=TASK_MIN_TIME_BUDGET,
+        le=TASK_MAX_TIME_BUDGET,
+        description="Time budget in seconds",
+    )
 
     # UC-01: Web Search parameters
     search_engine: str = Field(

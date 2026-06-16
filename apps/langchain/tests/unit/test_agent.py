@@ -1,8 +1,7 @@
 """Tests for agent execution and artifact aggregation."""
 
 import pytest
-
-from src.collector import reset_collector, get_collector
+from src.collector import get_collector, reset_collector
 
 
 class FakeAgentExecutor:
@@ -10,7 +9,7 @@ class FakeAgentExecutor:
         self.output = output
         self.steps = steps
 
-    async def ainvoke(self, _input):
+    async def ainvoke(self, _input, **_kwargs):
         # Simulate minimal AgentExecutor result shape
         return {
             "output": self.output,
